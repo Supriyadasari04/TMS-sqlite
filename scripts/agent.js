@@ -13,7 +13,7 @@ window.onload = function () {
 
   renderStats();
   renderAllTabs();
-  loadNotificationCount();
+  updateNotifCount();
 };
 
 /* ==============================
@@ -73,6 +73,7 @@ function renderAssigned() {
       <h4>${t.title}</h4>
       <p><strong>Ticket ID:</strong> #${t.id}</p>
       <p><strong>Impact Level:</strong> ${t.impact}</p>
+      <p><strong>Description:</strong> ${t.description || 'N/A'}</p>
       <p><strong>Account Holder:</strong> ${t.accountHolder}</p>
       <p><strong>Status:</strong> ${t.status}</p>
       <div style="display:flex; gap:10px;">
@@ -104,6 +105,7 @@ function renderInProgress() {
       <h4>${t.title}</h4>
       <p><strong>Ticket ID:</strong> #${t.id}</p>
       <p><strong>Impact Level:</strong> ${t.impact}</p>
+      <p><strong>Description:</strong> ${t.description || 'N/A'}</p>
       <p><strong>Account Holder:</strong> ${t.accountHolder}</p>
       <p><strong>Status:</strong> ${t.status}</p>
     </div>
@@ -127,6 +129,7 @@ function renderResolved() {
       <h4>${t.title}</h4>
       <p><strong>Ticket ID:</strong> #${t.id}</p>
       <p><strong>Impact Level:</strong> ${t.impact}</p>
+      <p><strong>Description:</strong> ${t.description || 'N/A'}</p>
       <p><strong>Account Holder:</strong> ${t.accountHolder}</p>
       <p><strong>Status:</strong> ${t.status}</p>
     </div>
@@ -141,8 +144,31 @@ function updateStatus(ticketId, newStatus) {
   ticket.status = newStatus;
   localStorage.setItem("tickets", JSON.stringify(tickets));
 
+  // --- Notifications ---
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const customer = users.find(u => u.email === ticket.createdBy);
+  const admin = users.find(u => u.role === "admin");
+
+  if (customer) {
+    addNotification({
+      message: `Status of your ticket #${ticket.id} has been changed to "${newStatus}".`,
+      role: "customer",
+      email: customer.email,
+      timestamp: new Date().toLocaleString()
+    });
+  }
+
+  if (admin) {
+    addNotification({
+      message: `Ticket #${ticket.id} status changed to "${newStatus}" by ${ticket.assignedTo}.`,
+      role: "admin",
+      timestamp: new Date().toLocaleString()
+    });
+  }
+
   renderStats();
   renderAllTabs();
+  updateNotifCount();
 }
 
 /* ==============================
@@ -187,9 +213,8 @@ window.addEventListener("storage", e => {
 });
 
 /* ==============================
-   Notifications Popup Feature
+   Notifications
 ============================== */
-// ===== Notifications =====
 function toggleNotifications() {
   const panel = document.getElementById("notif-panel");
   if (panel.style.display === "block") {
@@ -206,42 +231,29 @@ function renderNotifications() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
 
-  // Filter for this user or role
   notifications = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
 
-  // Sorting
   if (sortValue === "latest") {
     notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   } else if (sortValue === "earliest") {
     notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
 
-  notifList.innerHTML = "";
-  if (!notifications.length) {
-    notifList.innerHTML = "<p style='text-align:center;'>No new notifications.</p>";
-    document.getElementById("notif-count").innerText = "0";
-    return;
-  }
-
-  notifications.forEach((n, index) => {
-    const notifEl = document.createElement("div");
-    notifEl.classList.add("notif-item");
-
-    notifEl.innerHTML = `
-      <div>
-        <small>${n.timestamp}</small>
-        <p>${n.message}</p>
+  notifList.innerHTML = notifications.length
+    ? notifications.map((n, index) => `
+      <div class="notif-item">
+        <div>
+          <small>${n.timestamp}</small>
+          <p>${n.message}</p>
+        </div>
+        <button class="mark-read-btn" onclick="markAsRead(${index})">&times;</button>
       </div>
-      <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
-    `;
-
-    notifList.appendChild(notifEl);
-  });
+    `).join("")
+    : "<p style='text-align:center;'>No new notifications.</p>";
 
   document.getElementById("notif-count").innerText = notifications.length;
 }
 
-// Mark as read
 function markAsRead(index) {
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -249,24 +261,19 @@ function markAsRead(index) {
 
   if (userNotifications[index]) {
     const notifIndex = notifications.findIndex(n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message);
-    if (notifIndex > -1) {
-      notifications[notifIndex].read = true;
-    }
+    if (notifIndex > -1) notifications[notifIndex].read = true;
   }
 
   localStorage.setItem("notifications", JSON.stringify(notifications));
   renderNotifications();
 }
 
-// Clear all notifications
 document.getElementById("clear-all-notifs").onclick = () => {
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   notifications = notifications.map(n => {
-    if (n.email === currentUser.email || n.role === currentUser.role) {
-      n.read = true;
-    }
+    if (n.email === currentUser.email || n.role === currentUser.role) n.read = true;
     return n;
   });
 
@@ -274,7 +281,6 @@ document.getElementById("clear-all-notifs").onclick = () => {
   renderNotifications();
 };
 
-// Sort change
 document.getElementById("notif-sort").addEventListener("change", renderNotifications);
 
 function updateNotifCount() {
@@ -282,4 +288,10 @@ function updateNotifCount() {
   const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const userNotifs = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
   document.getElementById("notif-count").innerText = userNotifs.length;
+}
+
+function addNotification(notif) {
+  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  notifications.push({ ...notif, read: false });
+  localStorage.setItem("notifications", JSON.stringify(notifications));
 }

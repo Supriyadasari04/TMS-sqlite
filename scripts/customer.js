@@ -1,3 +1,8 @@
+/* ============================================
+   Customer Dashboard Script – TicketPro
+   ============================================ */
+
+// === On Page Load ===
 window.onload = function () {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || currentUser.role !== "customer") {
@@ -7,13 +12,14 @@ window.onload = function () {
 
   document.getElementById("customer-name").innerText = currentUser.username;
 
-  // 🚨 Check if password reset is required
+  // Check if password reset is required
   if (currentUser.password === "Ticketpro@123" || currentUser.needsPasswordReset) {
     showPasswordResetModal();
   }
 
   renderTickets();
   updateStats();
+  updateNotifCount();
 };
 
 // === Password Reset Handling ===
@@ -38,7 +44,6 @@ function showPasswordResetModal() {
       return;
     }
 
-    // Update in localStorage
     const users = JSON.parse(localStorage.getItem("users")) || [];
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     const updatedUsers = users.map(u =>
@@ -53,81 +58,84 @@ function showPasswordResetModal() {
   };
 }
 
+// === Ticket Modal Handling ===
+document.addEventListener("DOMContentLoaded", function () {
+  const modal = document.getElementById("ticket-modal");
+  const openModalBtn = document.getElementById("open-modal-btn");
+  const cancelBtn = document.getElementById("cancel-ticket");
+  const saveBtn = document.getElementById("save-ticket");
 
-// Elements
-const modal = document.getElementById("ticket-modal");
-const openModalBtn = document.getElementById("open-modal-btn");
-const cancelBtn = document.getElementById("cancel-ticket");
-const saveBtn = document.getElementById("save-ticket");
+  if (!modal || !openModalBtn || !cancelBtn || !saveBtn) return;
 
-openModalBtn.addEventListener("click", () => (modal.style.display = "flex"));
-cancelBtn.addEventListener("click", () => (modal.style.display = "none"));
+  // Open & close modal
+  openModalBtn.addEventListener("click", () => (modal.style.display = "flex"));
+  cancelBtn.addEventListener("click", () => (modal.style.display = "none"));
 
-saveBtn.addEventListener("click", () => {
-  const subject = document.getElementById("ticket-subject").value;
-  const description = document.getElementById("ticket-description").value.trim();
-  const impact = document.getElementById("impact").value;
-  const accountHolder = document.getElementById("account-holder").value.trim();
-  const accountNumber = document.getElementById("account-number").value.trim();
-  const ifscCode = document.getElementById("ifsc-code").value.trim();
+  // === Create Ticket Handler ===
+  saveBtn.addEventListener("click", () => {
+    const subject = document.getElementById("ticket-subject").value.trim();
+    const description = document.getElementById("ticket-description").value.trim();
+    const impact = document.getElementById("impact").value;
+    const accountHolder = document.getElementById("account-holder").value.trim();
+    const accountNumber = document.getElementById("account-number").value.trim();
+    const ifscCode = document.getElementById("ifsc-code").value.trim();
 
-  if (!subject || !description || !impact || !accountHolder || !accountNumber || !ifscCode) {
-    alert("Please fill all required fields.");
-    return;
-  }
+    if (!subject || !description || !impact || !accountHolder || !accountNumber || !ifscCode) {
+      alert("Please fill all required fields.");
+      return;
+    }
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
 
-  const newTicket = {
-    id: "TCKT-" + Date.now(),
-    title: subject,
-    description,
-    impact,
-    accountHolder,
-    accountNumber,
-    ifscCode,
-    status: "Pending",
-    createdBy: currentUser.email,
-    createdAt: new Date().toLocaleString(),
-    assignedTo: null,
-  };
+    const newTicket = {
+      id: "TCKT-" + Date.now(),
+      title: subject,
+      description,
+      impact,
+      accountHolder,
+      accountNumber,
+      ifscCode,
+      status: "Pending",
+      createdBy: currentUser.email,
+      createdAt: new Date().toLocaleString(),
+      assignedTo: null,
+    };
 
-  tickets.push(newTicket);
-  localStorage.setItem("tickets", JSON.stringify(tickets));
+    tickets.push(newTicket);
+    localStorage.setItem("tickets", JSON.stringify(tickets));
 
-  alert("Ticket created successfully!");
+    // Add notifications
+    addNotification({
+      message: `New ticket created by ${currentUser.username}: #${newTicket.id}`,
+      role: "admin",
+      timestamp: new Date().toLocaleString(),
+    });
 
-  // Notify admin
-addNotification({
-  message: `New ticket created by ${currentUser.username}: #${newTicket.id}`,
-  role: "admin",
-  timestamp: new Date().toLocaleString()
+    addNotification({
+      message: `Your ticket #${newTicket.id} has been created successfully. Our team will reach out soon.`,
+      role: "customer",
+      email: currentUser.email,
+      timestamp: new Date().toLocaleString(),
+    });
+
+    alert("Ticket created successfully!");
+    modal.style.display = "none";
+    clearInputs();
+    renderTickets();
+    updateStats();
+    updateNotifCount();
+  });
 });
 
-addNotification({
-  message: `Your ticket #${newTicket.id} has been created successfully. Our team will reach out soon.`,
-  role: "customer",
-  email: currentUser.email,
-  timestamp: new Date().toLocaleString()
-});
-
-
-  modal.style.display = "none";
-  clearInputs();
-  renderTickets();
-  updateStats();
-});
-
+// === Helper Functions ===
 function clearInputs() {
-  document.getElementById("ticket-subject").value = "";
-  document.getElementById("impact").value = "";
-  document.getElementById("ticket-description").value = "";
-  document.getElementById("account-holder").value = "";
-  document.getElementById("account-number").value = "";
-  document.getElementById("ifsc-code").value = "";
+  document.querySelectorAll("#ticket-modal input, #ticket-modal select, #ticket-modal textarea").forEach(el => {
+    el.value = "";
+  });
 }
 
+// === Render Tickets ===
 function renderTickets() {
   const container = document.getElementById("tickets-container");
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -140,18 +148,24 @@ function renderTickets() {
     return;
   }
 
-  container.innerHTML = userTickets.map(t => `
-    <div class="ticket-card">
-      <h4>${t.title}</h4>
-      <p><strong>Ticket ID:</strong> #${t.id}</p>
-      <p><strong>Description:</strong> ${t.description}</p>
-      <p><strong>Impact Level:</strong> ${t.impact}</p>
-      <p><strong>Status:</strong> ${t.status}</p>
-      <p><strong>Assigned To:</strong> ${t.assignedTo ? t.assignedTo : '<span style="color:gray">Not assigned yet</span>'}</p>
-    </div>
-  `).join("");
+  container.innerHTML = userTickets
+    .map(
+      t => `
+      <div class="ticket-card">
+        <h4>${t.title}</h4>
+        <p><strong>Ticket ID:</strong> #${t.id}</p>
+        <p><strong>Description:</strong> ${t.description}</p>
+        <p><strong>Impact Level:</strong> ${t.impact}</p>
+        <p><strong>Status:</strong> ${t.status}</p>
+        <p><strong>Assigned To:</strong> ${
+          t.assignedTo ? t.assignedTo : '<span style="color:gray">Not assigned yet</span>'
+        }</p>
+      </div>`
+    )
+    .join("");
 }
 
+// === Update Ticket Stats ===
 function updateStats() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
@@ -166,15 +180,10 @@ function updateStats() {
 /* ==============================
    Notifications Popup Feature
 ============================== */
-// ===== Notifications =====
 function toggleNotifications() {
   const panel = document.getElementById("notif-panel");
-  if (panel.style.display === "block") {
-    panel.style.display = "none";
-  } else {
-    renderNotifications();
-    panel.style.display = "block";
-  }
+  panel.style.display = panel.style.display === "block" ? "none" : "block";
+  if (panel.style.display === "block") renderNotifications();
 }
 
 function renderNotifications() {
@@ -183,80 +192,83 @@ function renderNotifications() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
 
-  // Filter for this user or role
   notifications = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
 
-  // Sorting
-  if (sortValue === "latest") {
-    notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  } else if (sortValue === "earliest") {
-    notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
+  // Sort notifications
+  if (sortValue === "latest") notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  else if (sortValue === "earliest") notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  notifList.innerHTML = "";
-  if (!notifications.length) {
-    notifList.innerHTML = "<p style='text-align:center;'>No new notifications.</p>";
-    document.getElementById("notif-count").innerText = "0";
-    return;
-  }
-
-  notifications.forEach((n, index) => {
-    const notifEl = document.createElement("div");
-    notifEl.classList.add("notif-item");
-
-    notifEl.innerHTML = `
-      <div>
-        <small>${n.timestamp}</small>
-        <p>${n.message}</p>
-      </div>
-      <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
-    `;
-
-    notifList.appendChild(notifEl);
-  });
+  notifList.innerHTML = notifications.length
+    ? notifications
+        .map(
+          (n, index) => `
+        <div class="notif-item">
+          <div>
+            <small>${n.timestamp}</small>
+            <p>${n.message}</p>
+          </div>
+          <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
+        </div>`
+        )
+        .join("")
+    : "<p style='text-align:center;'>No new notifications.</p>";
 
   document.getElementById("notif-count").innerText = notifications.length;
 }
 
-// Mark as read
 function markAsRead(index) {
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const userNotifications = notifications.filter(n => n.email === currentUser.email || n.role === currentUser.role);
 
   if (userNotifications[index]) {
-    const notifIndex = notifications.findIndex(n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message);
-    if (notifIndex > -1) {
-      notifications[notifIndex].read = true;
-    }
+    const notifIndex = notifications.findIndex(
+      n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message
+    );
+    if (notifIndex > -1) notifications[notifIndex].read = true;
   }
 
   localStorage.setItem("notifications", JSON.stringify(notifications));
   renderNotifications();
+  updateNotifCount();
 }
 
-// Clear all notifications
-document.getElementById("clear-all-notifs").onclick = () => {
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+document.addEventListener("DOMContentLoaded", function () {
+  const clearBtn = document.getElementById("clear-all-notifs");
+  const sortSelect = document.getElementById("notif-sort");
 
-  notifications = notifications.map(n => {
-    if (n.email === currentUser.email || n.role === currentUser.role) {
-      n.read = true;
-    }
-    return n;
-  });
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      notifications = notifications.map(n => {
+        if (n.email === currentUser.email || n.role === currentUser.role) n.read = true;
+        return n;
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+      renderNotifications();
+      updateNotifCount();
+    };
+  }
 
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-  renderNotifications();
-};
-
-// Sort change
-document.getElementById("notif-sort").addEventListener("change", renderNotifications);
+  if (sortSelect) sortSelect.addEventListener("change", renderNotifications);
+});
 
 function updateNotifCount() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const userNotifs = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
   document.getElementById("notif-count").innerText = userNotifs.length;
+}
+
+/* === Add Notification Utility === */
+function addNotification(notification) {
+  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  notifications.push({ ...notification, read: false });
+  localStorage.setItem("notifications", JSON.stringify(notifications));
+}
+
+/* === Get All Users Utility === */
+function getUsers() {
+  return JSON.parse(localStorage.getItem("users")) || [];
 }

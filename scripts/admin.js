@@ -167,13 +167,65 @@ function assignAgent(ticketId, agentUsername) {
   const admin = JSON.parse(localStorage.getItem("currentUser"));
 
   if (customer && agentUsername) {
-    addNotification({ message: `Your ticket #${ticket.id} has been assigned to agent ${agentUsername}.`, role: "customer", email: customer.email, timestamp: new Date().toLocaleString() });
+    addNotification({
+      message: `Your ticket #${ticket.id} has been assigned to agent ${agentUsername}.`,
+      role: "customer",
+      email: customer.email,
+      timestamp: new Date().toLocaleString()
+    });
   }
+
   if (agent && agentUsername) {
-    addNotification({ message: `You have been assigned to ticket #${ticket.id} (${ticket.title}).`, role: "agent", email: agent.email, timestamp: new Date().toLocaleString() });
+    addNotification({
+      message: `You have been assigned to ticket #${ticket.id} (${ticket.title}).`,
+      role: "agent",
+      email: agent.email,
+      timestamp: new Date().toLocaleString()
+    });
   }
+
   if (admin) {
-    addNotification({ message: `Ticket #${ticket.id} assigned to agent ${agentUsername}. Please monitor progress.`, role: "admin", timestamp: new Date().toLocaleString() });
+    addNotification({
+      message: `Ticket #${ticket.id} assigned to agent ${agentUsername}. Please monitor progress.`,
+      role: "admin",
+      timestamp: new Date().toLocaleString()
+    });
+  }
+
+  renderTickets();
+  renderStats();
+  updateNotifCount();
+}
+
+// ===== Change Ticket Status (new function) =====
+function changeTicketStatus(ticketId, newStatus) {
+  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
+  const ticketIndex = tickets.findIndex(t => t.id === ticketId);
+  if (ticketIndex === -1) return;
+
+  tickets[ticketIndex].status = newStatus;
+  localStorage.setItem("tickets", JSON.stringify(tickets));
+
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const ticket = tickets[ticketIndex];
+  const customer = users.find(u => u.email === ticket.createdBy);
+  const admin = JSON.parse(localStorage.getItem("currentUser"));
+
+  if (customer) {
+    addNotification({
+      message: `Status of your ticket #${ticket.id} has been changed to "${newStatus}".`,
+      role: "customer",
+      email: customer.email,
+      timestamp: new Date().toLocaleString()
+    });
+  }
+
+  if (admin) {
+    addNotification({
+      message: `Ticket #${ticket.id} status changed to "${newStatus}".`,
+      role: "admin",
+      timestamp: new Date().toLocaleString()
+    });
   }
 
   renderTickets();
@@ -305,6 +357,7 @@ function renderFilteredTickets(filteredTickets) {
         </div>
         <p><strong>Ticket ID:</strong> ${filteredTicket.id}</p>
         <p><strong>Impact Level:</strong> ${filteredTicket.impact || 'N/A'}</p>
+        <p><strong>Description:</strong> ${filteredTicket.description || 'N/A'}</p>
         <p><strong>Account Holder:</strong> ${filteredTicket.accountHolder || 'N/A'}</p>
         <p><strong>Status:</strong> ${filteredTicket.status}</p>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -335,42 +388,25 @@ function renderNotifications() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
 
-  // Filter for this user or role
   notifications = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
 
-  // Sorting
-  if (sortValue === "latest") {
-    notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  } else if (sortValue === "earliest") {
-    notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
+  if (sortValue === "latest") notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  else if (sortValue === "earliest") notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  notifList.innerHTML = "";
-  if (!notifications.length) {
-    notifList.innerHTML = "<p style='text-align:center;'>No new notifications.</p>";
-    document.getElementById("notif-count").innerText = "0";
-    return;
-  }
-
-  notifications.forEach((n, index) => {
-    const notifEl = document.createElement("div");
-    notifEl.classList.add("notif-item");
-
-    notifEl.innerHTML = `
-      <div>
-        <small>${n.timestamp}</small>
-        <p>${n.message}</p>
-      </div>
-      <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
-    `;
-
-    notifList.appendChild(notifEl);
-  });
+  notifList.innerHTML = notifications.length
+    ? notifications.map((n, index) => `
+      <div class="notif-item">
+        <div>
+          <small>${n.timestamp}</small>
+          <p>${n.message}</p>
+        </div>
+        <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
+      </div>`).join("")
+    : "<p style='text-align:center;'>No new notifications.</p>";
 
   document.getElementById("notif-count").innerText = notifications.length;
 }
 
-// Mark as read
 function markAsRead(index) {
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -378,24 +414,19 @@ function markAsRead(index) {
 
   if (userNotifications[index]) {
     const notifIndex = notifications.findIndex(n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message);
-    if (notifIndex > -1) {
-      notifications[notifIndex].read = true;
-    }
+    if (notifIndex > -1) notifications[notifIndex].read = true;
   }
 
   localStorage.setItem("notifications", JSON.stringify(notifications));
   renderNotifications();
 }
 
-// Clear all notifications
 document.getElementById("clear-all-notifs").onclick = () => {
   let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   notifications = notifications.map(n => {
-    if (n.email === currentUser.email || n.role === currentUser.role) {
-      n.read = true;
-    }
+    if (n.email === currentUser.email || n.role === currentUser.role) n.read = true;
     return n;
   });
 
@@ -403,7 +434,6 @@ document.getElementById("clear-all-notifs").onclick = () => {
   renderNotifications();
 };
 
-// Sort change
 document.getElementById("notif-sort").addEventListener("change", renderNotifications);
 
 function updateNotifCount() {
@@ -411,4 +441,10 @@ function updateNotifCount() {
   const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
   const userNotifs = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
   document.getElementById("notif-count").innerText = userNotifs.length;
+}
+
+function addNotification(notif) {
+  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  notifications.push({ ...notif, read: false });
+  localStorage.setItem("notifications", JSON.stringify(notifications));
 }
