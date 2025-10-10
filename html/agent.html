@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Dashboard - TicketPro</title>
+
+  <!-- Importing existing styles -->
+  <link rel="stylesheet" href="/Ticket-Management-System/styles/agent.css" />
+</head>
+<body>
+  <nav class="admin-navbar">
+    <h2>Agent Dashboard</h2>
+    <div class="admin-welcome">Welcome, <span id="agent-name">Agent</span></div>
+    <div class="notif-bell" onclick="toggleNotifications()">
+  🔔 <span id="notif-count">0</span>
+</div>
+<div id="notif-panel" class="notif-panel" style="display:none;"></div>
+
+    <a href="./landing.html" id="nav-right">Logout</a>
+  </nav>
+
+  <section class="admin-stats">
+    <div class="stat-card">
+      <div>
+        <h3 id="assigned-tickets">0</h3>
+        <p>Total Tickets Assigned to Me</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <h3 id="pending-tickets">0</h3>
+        <p>Pending by Me</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <h3 id="inprogress-tickets">0</h3>
+        <p>In Progress by Me</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div>
+        <h3 id="resolved-tickets">0</h3>
+        <p>Resolved by Me</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="tab-buttons">
+    <button onclick="showTab('assigned')" id="tab-assigned" class="active-tab">Assigned Tickets</button>
+    <button onclick="showTab('inprogress')" id="tab-inprogress">In Progress Tickets</button>
+    <button onclick="showTab('resolved')" id="tab-resolved">Resolved Tickets</button>
+  </div>
+
+  <section id="assigned-section" class="admin-section">
+    <input type="text" id="search-assigned" placeholder="Search tickets..." />
+    <div id="assigned-list" class="card-list">
+      <p class="empty-text">No assigned tickets</p>
+    </div>
+  </section>
+
+  <section id="inprogress-section" class="admin-section" style="display:none;">
+    <input type="text" id="search-inprogress" placeholder="Search tickets..." />
+    <div id="inprogress-list" class="card-list">
+      <p class="empty-text">No in progress tickets</p>
+    </div>
+  </section>
+
+  <section id="resolved-section" class="admin-section" style="display:none;">
+    <input type="text" id="search-resolved" placeholder="Search tickets..." />
+    <div id="resolved-list" class="card-list">
+      <p class="empty-text">No resolved tickets</p>
+    </div>
+  </section>
+<script src="/Ticket-Management-System/scripts/notifications.js"></script>
+
+  <script src="/Ticket-Management-System/scripts/agent.js"></script>
+</body>
+</html>
