@@ -1,132 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Customer Portal - TicketPro</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Portal - TicketPro</title>
 
-  <link rel="stylesheet" href="/Ticket-Management-System/styles/base.css" />
-  <link rel="stylesheet" href="/Ticket-Management-System/styles/customer.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-<nav class="customer-navbar">
-  <h2>Customer Portal</h2>
-  <div class="customer-welcome">Welcome, <span id="customer-name">Customer</span></div>
-
-  <div class="nav-right">
-    <div class="notif-bell" onclick="toggleNotifications()">
-      <i class="fa-solid fa-bell"></i>
-      <span id="notif-count">0</span>
-    </div>
-    <a href="./landing.html" id="nav-right-link" onclick="localStorage.removeItem('currentUser')">Logout</a>
-  </div>
-</nav>
-
-
-  <section class="customer-stats">
-    <div class="stat-card"><h3 id="total-tickets">0</h3><p>Total Tickets</p></div>
-    <div class="stat-card"><h3 id="pending-tickets">0</h3><p>Pending</p></div>
-    <div class="stat-card"><h3 id="inprogress-tickets">0</h3><p>In Progress</p></div>
-    <div class="stat-card"><h3 id="resolved-tickets">0</h3><p>Resolved</p></div>
-  </section>
-
-  <section class="ticket-section">
-    <div class="ticket-header">
-      <h3>My Tickets</h3>
-      <button id="open-modal-btn" class="btn-primary">+ Create Ticket</button>
-    </div>
-
-    <div id="tickets-container" class="ticket-list">
-      <p class="empty-text">No tickets yet</p>
-    </div>
-  </section>
-
-  <!-- Modal -->
-  <div id="ticket-modal" class="modal">
-    <div class="modal-content">
-      <h3>Create New Ticket</h3>
-      <p>Provide details about your issue so we can assist you quickly.</p>
-
-      <div class="input-grid">
-        <div class="input-group">
-          <label>Account Holder Name <span style="color:red">*</span></label>
-          <input type="text" id="account-holder" placeholder="Enter your full name" />
-        </div>
-
-        <div class="input-group">
-          <label>Bank Account Number <span style="color:red">*</span></label>
-          <input type="text" id="account-number" placeholder="Enter your account number" />
-        </div>
-
-        <div class="input-group">
-          <label>IFSC Code <span style="color:red">*</span></label>
-          <input type="text" id="ifsc-code" placeholder="Enter your IFSC code" />
-        </div>
-
-        <div class="input-group">
-          <label>Issue Type <span style="color:red">*</span></label>
-          <select id="ticket-subject">
-            <option value="">Select issue type</option>
-            <option>Login Issue</option>
-            <option>Password Reset</option>
-            <option>Account Access</option>
-            <option>Fund Transfer Issue</option>
-            <option>Card Block / Lost Card</option>
-            <option>Unauthorized Transaction</option>
-            <option>Other</option>
-          </select>
-        </div>
-
-        <div class="input-group">
-          <label>Impact level <span style="color:red">*</span></label>
-          <select id="impact">
-            <option value="">Select Impact</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-        </div>
+    <link rel="stylesheet" href="/Ticket-Management-System/styles/base.css" />
+    <link
+      rel="stylesheet"
+      href="/Ticket-Management-System/styles/customer.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <nav class="customer-navbar">
+      <h2>Customer Portal</h2>
+      <div class="customer-welcome">
+        Welcome, <span id="customer-name">Customer</span>
       </div>
 
-      <div class="input-group">
-        <label>Description <span style="color:red">*</span></label>
-        <textarea id="ticket-description" placeholder="Provide detailed information about your issue"></textarea>
+      <div class="nav-right">
+        <div class="notif-bell" onclick="toggleNotifications()">
+          <i class="fa-solid fa-bell"></i>
+          <span id="notif-count">0</span>
+        </div>
+        <a
+          href="./landing.html"
+          id="nav-right-link"
+          onclick="localStorage.removeItem('currentUser')"
+          >Logout</a
+        >
+      </div>
+    </nav>
+
+    <section class="customer-stats">
+      <div class="stat-card">
+        <h3 id="total-tickets">0</h3>
+        <p>Total Tickets</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="pending-tickets">0</h3>
+        <p>Pending</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="inprogress-tickets">0</h3>
+        <p>In Progress</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="resolved-tickets">0</h3>
+        <p>Resolved</p>
+      </div>
+    </section>
+
+    <section class="ticket-section">
+      <div class="ticket-header">
+        <h3>My Tickets</h3>
+        <button id="open-modal-btn" class="btn-primary">+ Create Ticket</button>
       </div>
 
-      <div class="modal-actions">
-        <button id="cancel-ticket" class="btn-outline">Cancel</button>
-        <button id="save-ticket" class="btn-primary">Create Ticket</button>
+      <div id="tickets-container" class="ticket-list">
+        <p class="empty-text">No tickets yet</p>
+      </div>
+    </section>
+
+    <!-- Modal -->
+    <div id="ticket-modal" class="modal">
+      <div class="modal-content">
+        <h3>Create New Ticket</h3>
+        <p>Provide details about your issue so we can assist you quickly.</p>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label>Account Holder Name <span style="color: red">*</span></label>
+            <input
+              type="text"
+              id="account-holder"
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          <div class="input-group">
+            <label>Bank Account Number <span style="color: red">*</span></label>
+            <input
+              type="text"
+              id="account-number"
+              placeholder="Enter your account number"
+            />
+          </div>
+
+          <div class="input-group">
+            <label>IFSC Code <span style="color: red">*</span></label>
+            <input
+              type="text"
+              id="ifsc-code"
+              placeholder="Enter your IFSC code"
+            />
+          </div>
+
+          <div class="input-group">
+            <label>Issue Type <span style="color: red">*</span></label>
+            <select id="ticket-subject">
+              <option value="">Select issue type</option>
+              <option>Login Issue</option>
+              <option>Password Reset</option>
+              <option>Account Access</option>
+              <option>Fund Transfer Issue</option>
+              <option>Card Block / Lost Card</option>
+              <option>Unauthorized Transaction</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Impact level <span style="color: red">*</span></label>
+            <select id="impact">
+              <option value="">Select Impact</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Description <span style="color: red">*</span></label>
+          <textarea
+            id="ticket-description"
+            placeholder="Provide detailed information about your issue"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button id="cancel-ticket" class="btn-outline">Cancel</button>
+          <button id="save-ticket" class="btn-primary">Create Ticket</button>
+        </div>
       </div>
     </div>
-  </div>
-<div id="password-reset-modal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <h3>Reset Your Password</h3>
-    <p>You are using a temporary password. Please set a new one to continue.</p>
-    <input type="password" id="new-password" placeholder="Enter new password" class="auth-input" />
-    <input type="password" id="confirm-password" placeholder="Confirm new password" class="auth-input" />
-    <div style="margin-top:12px; display:flex; gap:10px;">
-      <button id="save-new-password" class="btn-primary" style="flex:1;">Save Password</button>
+    <div id="password-reset-modal" class="modal-overlay" style="display: none">
+      <div class="modal-box">
+        <h3>Reset Your Password</h3>
+        <p>
+          You are using a temporary password. Please set a new one to continue.
+        </p>
+        <input
+          type="password"
+          id="new-password"
+          placeholder="Enter new password"
+          class="auth-input"
+        />
+        <input
+          type="password"
+          id="confirm-password"
+          placeholder="Confirm new password"
+          class="auth-input"
+        />
+        <div style="margin-top: 12px; display: flex; gap: 10px">
+          <button id="save-new-password" class="btn-primary" style="flex: 1">
+            Save Password
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-<!-- Notifications Popup -->
-<div id="notif-panel" style="display:none;">
-  <div class="notif-header">
-    <h4>Notifications</h4>
-    <select id="notif-sort">
-      <option value="default">Default</option>
-      <option value="latest">Date: Latest</option>
-      <option value="earliest">Date: Earliest</option>
-    </select>
-  </div>
-  <div id="notif-list"></div>
-  <button id="clear-all-notifs" class="btn-outline" style="width:100%; margin-top:10px;">Clear All</button>
-</div>
+    <!-- Notifications Popup -->
+    <div id="notif-panel" style="display: none">
+      <div class="notif-header">
+        <h4>Notifications</h4>
+        <select id="notif-sort">
+          <option value="default">Default</option>
+          <option value="latest">Date: Latest</option>
+          <option value="earliest">Date: Earliest</option>
+        </select>
+      </div>
+      <div id="notif-list"></div>
+      <button
+        id="clear-all-notifs"
+        class="btn-outline"
+        style="width: 100%; margin-top: 10px"
+      >
+        Clear All
+      </button>
+    </div>
 
-<script src="/Ticket-Management-System/scripts/notifications.js"></script>
+    <script src="/Ticket-Management-System/scripts/notifications.js"></script>
 
-  <script src="/Ticket-Management-System/scripts/customer.js"></script>
-</body>
+    <script src="/Ticket-Management-System/scripts/customer.js"></script>
+  </body>
 </html>
