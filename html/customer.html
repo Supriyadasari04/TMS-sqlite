@@ -7,18 +7,22 @@
 
   <link rel="stylesheet" href="/Ticket-Management-System/styles/base.css" />
   <link rel="stylesheet" href="/Ticket-Management-System/styles/customer.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <nav class="customer-navbar">
-    <h2>Customer Portal</h2>
-    <div class="customer-welcome">Welcome, <span id="customer-name">Customer</span></div>
-    <div class="notif-bell" onclick="toggleNotifications()">
-  🔔 <span id="notif-count">0</span>
-</div>
-<div id="notif-panel" class="notif-panel" style="display:none;"></div>
+<nav class="customer-navbar">
+  <h2>Customer Portal</h2>
+  <div class="customer-welcome">Welcome, <span id="customer-name">Customer</span></div>
 
-    <a href="./landing.html" id="nav-right" onclick="localStorage.removeItem('currentUser')">Logout</a>
-  </nav>
+  <div class="nav-right">
+    <div class="notif-bell" onclick="toggleNotifications()">
+      <i class="fa-solid fa-bell"></i>
+      <span id="notif-count">0</span>
+    </div>
+    <a href="./landing.html" id="nav-right-link" onclick="localStorage.removeItem('currentUser')">Logout</a>
+  </div>
+</nav>
+
 
   <section class="customer-stats">
     <div class="stat-card"><h3 id="total-tickets">0</h3><p>Total Tickets</p></div>
@@ -107,6 +111,20 @@
     </div>
   </div>
 </div>
+<!-- Notifications Popup -->
+<div id="notif-panel" style="display:none;">
+  <div class="notif-header">
+    <h4>Notifications</h4>
+    <select id="notif-sort">
+      <option value="default">Default</option>
+      <option value="latest">Date: Latest</option>
+      <option value="earliest">Date: Earliest</option>
+    </select>
+  </div>
+  <div id="notif-list"></div>
+  <button id="clear-all-notifs" class="btn-outline" style="width:100%; margin-top:10px;">Clear All</button>
+</div>
+
 <script src="/Ticket-Management-System/scripts/notifications.js"></script>
 
   <script src="/Ticket-Management-System/scripts/customer.js"></script>

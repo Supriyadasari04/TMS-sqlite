@@ -5,18 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Agent Dashboard - TicketPro</title>
 
-  <!-- Importing existing styles -->
   <link rel="stylesheet" href="/Ticket-Management-System/styles/agent.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
   <nav class="admin-navbar">
     <h2>Agent Dashboard</h2>
     <div class="admin-welcome">Welcome, <span id="agent-name">Agent</span></div>
     <div class="notif-bell" onclick="toggleNotifications()">
-  🔔 <span id="notif-count">0</span>
-</div>
-<div id="notif-panel" class="notif-panel" style="display:none;"></div>
-
+      <i class="fa-solid fa-bell"></i>
+      <span id="notif-count">0</span>
+    </div>
     <a href="./landing.html" id="nav-right">Logout</a>
   </nav>
 
@@ -53,28 +52,55 @@
     <button onclick="showTab('resolved')" id="tab-resolved">Resolved Tickets</button>
   </div>
 
+  <!-- Assigned Tab -->
   <section id="assigned-section" class="admin-section">
-    <input type="text" id="search-assigned" placeholder="Search tickets..." />
+    <input type="text" id="search-assigned" placeholder="Search by Ticket ID, Issue Type, Account Name..." />
     <div id="assigned-list" class="card-list">
       <p class="empty-text">No assigned tickets</p>
     </div>
   </section>
 
+  <!-- In Progress Tab -->
   <section id="inprogress-section" class="admin-section" style="display:none;">
-    <input type="text" id="search-inprogress" placeholder="Search tickets..." />
+    <input type="text" id="search-inprogress" placeholder="Search by Ticket ID, Issue Type, Account Name..." />
     <div id="inprogress-list" class="card-list">
       <p class="empty-text">No in progress tickets</p>
     </div>
   </section>
 
+  <!-- Resolved Tab -->
   <section id="resolved-section" class="admin-section" style="display:none;">
-    <input type="text" id="search-resolved" placeholder="Search tickets..." />
+    <input type="text" id="search-resolved" placeholder="Search by Ticket ID, Issue Type, Account Name..." />
     <div id="resolved-list" class="card-list">
       <p class="empty-text">No resolved tickets</p>
     </div>
   </section>
-<script src="/Ticket-Management-System/scripts/notifications.js"></script>
 
+  <!-- Password Reset Modal -->
+  <div id="password-reset-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <h3>Reset Password</h3>
+      <input type="password" id="new-password" class="auth-input" placeholder="New Password" />
+      <input type="password" id="confirm-password" class="auth-input" placeholder="Confirm Password" />
+      <button id="save-new-password">Save</button>
+    </div>
+  </div>
+
+  <!-- Notifications Popup -->
+<div id="notif-panel" style="display:none;">
+  <div class="notif-header">
+    <h4>Notifications</h4>
+    <select id="notif-sort">
+      <option value="default">Default</option>
+      <option value="latest">Date: Latest</option>
+      <option value="earliest">Date: Earliest</option>
+    </select>
+  </div>
+  <div id="notif-list"></div>
+  <button id="clear-all-notifs" class="btn-outline" style="width:100%; margin-top:10px;">Clear All</button>
+</div>
+
+  <script src="/Ticket-Management-System/scripts/notifications.js"></script>
   <script src="/Ticket-Management-System/scripts/agent.js"></script>
 </body>
 </html>

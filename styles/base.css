@@ -10,6 +10,7 @@
   --font-main: "Inter", system-ui, sans-serif;
 }
 
+/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -32,19 +33,21 @@ p {
   line-height: 1.6;
 }
 
-button {
+/* Buttons */
+button,
+.btn {
   border: none;
   outline: none;
   cursor: pointer;
   border-radius: var(--radius);
   transition: all 0.2s ease;
+  font-weight: 600;
+  padding: 12px 24px;
 }
 
 .btn-primary {
   background: var(--primary);
   color: var(--white);
-  padding: 12px 24px;
-  font-weight: 600;
 }
 
 .btn-primary:hover {
@@ -55,14 +58,13 @@ button {
   background: var(--white);
   border: 1px solid var(--border);
   color: var(--text-dark);
-  padding: 12px 24px;
-  font-weight: 600;
 }
 
 .btn-outline:hover {
   background: var(--border);
 }
 
+/* Notifications */
 .notif-bell {
   position: relative;
   font-size: 20px;
