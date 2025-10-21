@@ -3,7 +3,7 @@
    ============================================ */
 
 // === On Page Load ===
-window.onload = function () {
+window.onload = async function () {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || currentUser.role !== "customer") {
     window.location.href = "signin.html";
@@ -17,17 +17,19 @@ window.onload = function () {
     showPasswordResetModal();
   }
 
-  renderTickets();
-  updateStats();
-  updateNotifCount();
+  await renderTickets();
+  await updateStats();
+  await updateNotifCount();
 };
 
-// === Password Reset Handling ===
-function showPasswordResetModal() {
+/* ==============================
+   Password Reset Modal
+============================== */
+async function showPasswordResetModal() {
   const modal = document.getElementById("password-reset-modal");
   modal.style.display = "flex";
 
-  document.getElementById("save-new-password").onclick = function () {
+  document.getElementById("save-new-password").onclick = async function () {
     const newPass = document.getElementById("new-password").value.trim();
     const confirm = document.getElementById("confirm-password").value.trim();
 
@@ -44,17 +46,34 @@ function showPasswordResetModal() {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    const updatedUsers = users.map(u =>
-      u.email === currentUser.email ? { ...u, password: newPass, needsPasswordReset: false } : u
-    );
+    try {
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      const response = await fetch(`http://localhost:3000/api/user/${currentUser.id}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newPassword: newPass,
+          isPasswordReset: true  // This tells the backend to skip current password verification
+        })
+      });
 
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    localStorage.setItem("currentUser", JSON.stringify({ ...currentUser, password: newPass, needsPasswordReset: false }));
+      const data = await response.json();
 
-    alert("Password updated successfully!");
-    modal.style.display = "none";
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+
+      // Update local storage
+      const updatedUser = { ...currentUser, password: newPass, needsPasswordReset: false };
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+      alert("Password updated successfully!");
+      modal.style.display = "none";
+    } catch (error) {
+      alert(error.message);
+    }
   };
 }
 
@@ -72,60 +91,73 @@ document.addEventListener("DOMContentLoaded", function () {
   cancelBtn.addEventListener("click", () => (modal.style.display = "none"));
 
   // === Create Ticket Handler ===
-  saveBtn.addEventListener("click", () => {
-    const subject = document.getElementById("ticket-subject").value.trim();
-    const description = document.getElementById("ticket-description").value.trim();
-    const impact = document.getElementById("impact").value;
-    const accountHolder = document.getElementById("account-holder").value.trim();
-    const accountNumber = document.getElementById("account-number").value.trim();
-    const ifscCode = document.getElementById("ifsc-code").value.trim();
+  saveBtn.addEventListener("click", async () => {
+  const subject = document.getElementById("ticket-subject").value.trim();
+  const description = document.getElementById("ticket-description").value.trim();
+  const impact = document.getElementById("impact").value;
+  const accountHolder = document.getElementById("account-holder").value.trim();
+  const accountNumber = document.getElementById("account-number").value.trim();
+  const ifscCode = document.getElementById("ifsc-code").value.trim();
 
-    if (!subject || !description || !impact || !accountHolder || !accountNumber || !ifscCode) {
-      alert("Please fill all required fields.");
+  if (!subject || !description || !impact || !accountHolder || !accountNumber || !ifscCode) {
+    alert("Please fill all required fields.");
+    return;
+  }
+
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    
+    console.log("Sending request to create ticket...");
+    
+    const response = await fetch('http://localhost:3000/api/tickets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: subject,
+        description,
+        impact,
+        accountHolder,
+        accountNumber,
+        ifscCode,
+        createdBy: currentUser.email
+      })
+    });
+
+    console.log("Response status:", response.status);
+    console.log("Response headers:", response.headers);
+    
+    // Get the raw response text first to see what we're getting
+    const responseText = await response.text();
+    console.log("Raw response:", responseText);
+    
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse response as JSON:", parseError);
+      alert("Server returned an invalid response. Check console for details.");
       return;
     }
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-
-    const newTicket = {
-      id: "TCKT-" + Date.now(),
-      title: subject,
-      description,
-      impact,
-      accountHolder,
-      accountNumber,
-      ifscCode,
-      status: "Pending",
-      createdBy: currentUser.email,
-      createdAt: new Date().toLocaleString(),
-      assignedTo: null,
-    };
-
-    tickets.push(newTicket);
-    localStorage.setItem("tickets", JSON.stringify(tickets));
-
-    // Add notifications
-    addNotification({
-      message: `New ticket created by ${currentUser.username}: #${newTicket.id}`,
-      role: "admin",
-      timestamp: new Date().toLocaleString(),
-    });
-
-    addNotification({
-      message: `Your ticket #${newTicket.id} has been created successfully. Our team will reach out soon.`,
-      role: "customer",
-      email: currentUser.email,
-      timestamp: new Date().toLocaleString(),
-    });
+    if (!response.ok) {
+      throw new Error(data.error || 'Request failed');
+    }
 
     alert("Ticket created successfully!");
     modal.style.display = "none";
     clearInputs();
-    renderTickets();
-    updateStats();
-    updateNotifCount();
-  });
+    
+    await renderTickets();
+    await updateStats();
+    await updateNotifCount();
+  } catch (error) {
+    console.error("Error creating ticket:", error);
+    alert("Error: " + error.message);
+  }
+});
 });
 
 // === Helper Functions ===
@@ -136,101 +168,114 @@ function clearInputs() {
 }
 
 // === Render Tickets ===
-function renderTickets() {
+async function renderTickets() {
   const container = document.getElementById("tickets-container");
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/customer/tickets?customerEmail=${currentUser.email}`);
+    const userTickets = await response.json();
 
-  const userTickets = tickets.filter(t => t.createdBy === currentUser.email);
+    if (!userTickets.length) {
+      container.innerHTML = `<p class="empty-text">No tickets yet</p>`;
+      return;
+    }
 
-  if (userTickets.length === 0) {
-    container.innerHTML = `<p class="empty-text">No tickets yet</p>`;
-    return;
+    container.innerHTML = userTickets
+      .map(
+        ticket => `
+        <div class="ticket-card">
+          <h4>${ticket.title}</h4>
+          <p><strong>Ticket ID:</strong> #${ticket.id}</p>
+          <p><strong>Description:</strong> ${ticket.description}</p>
+          <p><strong>Impact Level:</strong> ${ticket.impact}</p>
+          <p><strong>Status:</strong> ${ticket.status}</p>
+          <p><strong>Assigned To:</strong> ${
+            ticket.assignedTo ? ticket.assignedTo : '<span style="color:gray">Not assigned yet</span>'
+          }</p>
+        </div>`
+      )
+      .join("");
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    container.innerHTML = `<p class="empty-text">Error loading tickets</p>`;
   }
-
-  container.innerHTML = userTickets
-    .map(
-      t => `
-      <div class="ticket-card">
-        <h4>${t.title}</h4>
-        <p><strong>Ticket ID:</strong> #${t.id}</p>
-        <p><strong>Description:</strong> ${t.description}</p>
-        <p><strong>Impact Level:</strong> ${t.impact}</p>
-        <p><strong>Status:</strong> ${t.status}</p>
-        <p><strong>Assigned To:</strong> ${
-          t.assignedTo ? t.assignedTo : '<span style="color:gray">Not assigned yet</span>'
-        }</p>
-      </div>`
-    )
-    .join("");
 }
 
 // === Update Ticket Stats ===
-function updateStats() {
+async function updateStats() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-  const userTickets = tickets.filter(t => t.createdBy === currentUser.email);
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/customer/stats?customerEmail=${currentUser.email}`);
+    const stats = await response.json();
 
-  document.getElementById("total-tickets").innerText = userTickets.length;
-  document.getElementById("pending-tickets").innerText = userTickets.filter(t => t.status === "Pending").length;
-  document.getElementById("inprogress-tickets").innerText = userTickets.filter(t => t.status === "In Progress").length;
-  document.getElementById("resolved-tickets").innerText = userTickets.filter(t => t.status === "Resolved").length;
+    document.getElementById("total-tickets").innerText = stats.total || 0;
+    document.getElementById("pending-tickets").innerText = stats.pending || 0;
+    document.getElementById("inprogress-tickets").innerText = stats.inProgress || 0;
+    document.getElementById("resolved-tickets").innerText = stats.resolved || 0;
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+  }
 }
 
 /* ==============================
    Notifications Popup Feature
 ============================== */
-function toggleNotifications() {
+async function toggleNotifications() {
   const panel = document.getElementById("notif-panel");
   panel.style.display = panel.style.display === "block" ? "none" : "block";
-  if (panel.style.display === "block") renderNotifications();
+  if (panel.style.display === "block") await renderNotifications();
 }
 
-function renderNotifications() {
+async function renderNotifications() {
   const notifList = document.getElementById("notif-list");
-  const sortValue = document.getElementById("notif-sort").value;
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    let notifications = await response.json();
 
-  notifications = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
+    const sortValue = document.getElementById("notif-sort").value;
+    
+    // Sort notifications
+    if (sortValue === "latest") {
+      notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } else if (sortValue === "earliest") {
+      notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    }
 
-  // Sort notifications
-  if (sortValue === "latest") notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  else if (sortValue === "earliest") notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    notifList.innerHTML = notifications.length
+      ? notifications
+          .map(
+            notification => `
+            <div class="notif-item">
+              <div>
+                <small>${notification.timestamp}</small>
+                <p>${notification.message}</p>
+              </div>
+              <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
+            </div>`
+          )
+          .join("")
+      : "<p style='text-align:center;'>No new notifications.</p>";
 
-  notifList.innerHTML = notifications.length
-    ? notifications
-        .map(
-          (n, index) => `
-        <div class="notif-item">
-          <div>
-            <small>${n.timestamp}</small>
-            <p>${n.message}</p>
-          </div>
-          <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
-        </div>`
-        )
-        .join("")
-    : "<p style='text-align:center;'>No new notifications.</p>";
-
-  document.getElementById("notif-count").innerText = notifications.length;
+    document.getElementById("notif-count").innerText = notifications.length;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
 }
 
-function markAsRead(index) {
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const userNotifications = notifications.filter(n => n.email === currentUser.email || n.role === currentUser.role);
-
-  if (userNotifications[index]) {
-    const notifIndex = notifications.findIndex(
-      n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message
-    );
-    if (notifIndex > -1) notifications[notifIndex].read = true;
+async function markAsRead(notificationId) {
+  try {
+    await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+    await renderNotifications();
+    await updateNotifCount();
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
   }
-
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-  renderNotifications();
-  updateNotifCount();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -238,37 +283,40 @@ document.addEventListener("DOMContentLoaded", function () {
   const sortSelect = document.getElementById("notif-sort");
 
   if (clearBtn) {
-    clearBtn.onclick = () => {
-      let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+    clearBtn.onclick = async () => {
       const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-      notifications = notifications.map(n => {
-        if (n.email === currentUser.email || n.role === currentUser.role) n.read = true;
-        return n;
-      });
-      localStorage.setItem("notifications", JSON.stringify(notifications));
-      renderNotifications();
-      updateNotifCount();
+      
+      try {
+        const response = await fetch('http://localhost:3000/api/notifications/read-all', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: currentUser.email,
+            role: currentUser.role
+          })
+        });
+
+        await renderNotifications();
+        await updateNotifCount();
+      } catch (error) {
+        console.error('Error clearing notifications:', error);
+      }
     };
   }
 
   if (sortSelect) sortSelect.addEventListener("change", renderNotifications);
 });
 
-function updateNotifCount() {
+async function updateNotifCount() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  const userNotifs = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
-  document.getElementById("notif-count").innerText = userNotifs.length;
-}
-
-/* === Add Notification Utility === */
-function addNotification(notification) {
-  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  notifications.push({ ...notification, read: false });
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-}
-
-/* === Get All Users Utility === */
-function getUsers() {
-  return JSON.parse(localStorage.getItem("users")) || [];
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    const notifications = await response.json();
+    document.getElementById("notif-count").innerText = notifications.length;
+  } catch (error) {
+    console.error('Error updating notification count:', error);
+  }
 }

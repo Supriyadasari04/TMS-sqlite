@@ -1,5 +1,5 @@
 // ===== On Page Load =====
-window.onload = function () {
+window.onload = async function () {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || currentUser.role !== "admin") {
     window.location.href = "signin.html";
@@ -12,21 +12,8 @@ window.onload = function () {
     showPasswordResetModal();
   }
 
-  document.getElementById("search-button").addEventListener("click", () => {
-    const field = document.getElementById("search-field-dropdown").value;
-    const query = document.getElementById("search-input").value.trim();
-
-    if (!query) {
-      alert("Please enter a value to search.");
-      return;
-    }
-
-    const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-    const filtered = filterTicketsByField(tickets, field, query);
-
-    renderFilteredTickets(filtered);
-  });
-
+  // Event listeners
+  document.getElementById("search-button").addEventListener("click", handleSearch);
   document.getElementById("clear-search-button").addEventListener("click", () => {
     document.getElementById("search-input").value = "";
     renderTickets();
@@ -41,22 +28,22 @@ window.onload = function () {
     clearUserInputs();
   });
 
-  document.getElementById("save-user-btn").addEventListener("click", () => {
-    saveUser();
-  });
+  document.getElementById("save-user-btn").addEventListener("click", saveUser);
 
-  updateNotifCount();
-  renderStats();
-  renderTickets();
-  renderUsers();
+  await updateNotifCount();
+  await renderStats();
+  await renderTickets();
+  await renderUsers();
 };
 
-// ===== Password Reset =====
-function showPasswordResetModal() {
+/* ==============================
+   Password Reset Modal
+============================== */
+async function showPasswordResetModal() {
   const modal = document.getElementById("password-reset-modal");
   modal.style.display = "flex";
 
-  document.getElementById("save-new-password").onclick = function () {
+  document.getElementById("save-new-password").onclick = async function () {
     const newPass = document.getElementById("new-password").value.trim();
     const confirm = document.getElementById("confirm-password").value.trim();
 
@@ -73,51 +60,70 @@ function showPasswordResetModal() {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    const updatedUsers = users.map(u =>
-      u.email === currentUser.email ? { ...u, password: newPass, needsPasswordReset: false } : u
-    );
+    try {
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      const response = await fetch(`http://localhost:3000/api/user/${currentUser.id}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newPassword: newPass,
+          isPasswordReset: true  // This tells the backend to skip current password verification
+        })
+      });
 
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    localStorage.setItem("currentUser", JSON.stringify({ ...currentUser, password: newPass, needsPasswordReset: false }));
+      const data = await response.json();
 
-    alert("Password updated successfully!");
-    modal.style.display = "none";
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+
+      // Update local storage
+      const updatedUser = { ...currentUser, password: newPass, needsPasswordReset: false };
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+      alert("Password updated successfully!");
+      modal.style.display = "none";
+    } catch (error) {
+      alert(error.message);
+    }
   };
 }
 
-// ===== Logout =====
-function logout() {
-  localStorage.removeItem("currentUser");
-  window.location.href = "signin.html";
-}
-
 // ===== Stats =====
-function renderStats() {
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
+async function renderStats() {
+  try {
+    const response = await fetch('http://localhost:3000/api/tickets/stats');
+    const stats = await response.json();
 
-  document.getElementById("total-tickets").innerText = tickets.length;
-  document.getElementById("pending-tickets").innerText = tickets.filter(t => t.status === "Pending").length;
-  document.getElementById("inprogress-tickets").innerText = tickets.filter(t => t.status === "In Progress").length;
-  document.getElementById("resolved-tickets").innerText = tickets.filter(t => t.status === "Resolved").length;
+    document.getElementById("total-tickets").innerText = stats.total || 0;
+    document.getElementById("pending-tickets").innerText = stats.pending || 0;
+    document.getElementById("inprogress-tickets").innerText = stats.inProgress || 0;
+    document.getElementById("resolved-tickets").innerText = stats.resolved || 0;
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+  }
 }
 
 // ===== Tickets =====
-function renderTickets() {
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const agents = users.filter(u => u.role === "agent");
-  const container = document.getElementById("tickets-list");
+async function renderTickets() {
+  try {
+    const response = await fetch('http://localhost:3000/api/tickets');
+    const tickets = await response.json();
+    const agentsResponse = await fetch('http://localhost:3000/api/users');
+    const users = await agentsResponse.json();
+    const agents = users.filter(u => u.role === "agent");
+    
+    const container = document.getElementById("tickets-list");
 
-  if (tickets.length === 0) {
-    container.innerHTML = `<p class="empty-text">No tickets found</p>`;
-    return;
-  }
+    if (!tickets.length) {
+      container.innerHTML = `<p class="empty-text">No tickets found</p>`;
+      return;
+    }
 
-  container.innerHTML = tickets
-    .map((t, index) => {
-      const assignedTo = t.assignedTo || "";
+    container.innerHTML = tickets.map(ticket => {
+      const assignedTo = ticket.assignedTo || "";
       const agentOptions = agents
         .map(agent => `<option value="${agent.username}" ${agent.username === assignedTo ? "selected" : ""}>${agent.username}</option>`)
         .join("");
@@ -125,147 +131,131 @@ function renderTickets() {
       return `
       <div class="ticket-card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <h4>Issue: ${t.title}</h4>
-          <button class="btn-delete" onclick="deleteTicket(${index})">Delete</button>
+          <h4>Issue: ${ticket.title}</h4>
+          <button class="btn-delete" onclick="deleteTicket('${ticket.id}')">Delete</button>
         </div>
-        <p><strong>Ticket ID:</strong> #${t.id}</p>
-        <p><strong>Impact Level:</strong> ${t.impact || "N/A"}</p>
-        <p><strong>Account Holder:</strong> ${t.accountHolder || "N/A"}</p>
-        <p><strong>Status:</strong> ${t.status}</p>
+        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
+        <p><strong>Impact Level:</strong> ${ticket.impact || "N/A"}</p>
+        <p><strong>Account Holder:</strong> ${ticket.accountHolder || "N/A"}</p>
+        <p><strong>Status:</strong> ${ticket.status}</p>
         <div style="display:flex;align-items:center;gap:10px;">
           <p style="margin:0;"><strong>Assigned To:</strong></p>
-          <select onchange="assignAgent('${t.id}', this.value)">
+          <select onchange="assignAgent('${ticket.id}', this.value)">
             <option value="">Not assigned</option>
             ${agentOptions}
           </select>
         </div>
       </div>`;
     }).join("");
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+  }
 }
 
-function filterTicketsByField(tickets, field, query) {
-  query = query.toLowerCase();
-  return tickets.filter(ticket => {
-    let fieldValue = ticket[field] || "";
-    return String(fieldValue).toLowerCase().includes(query);
-  });
-}
+async function handleSearch() {
+  const field = document.getElementById("search-field-dropdown").value;
+  const query = document.getElementById("search-input").value.trim();
 
-function assignAgent(ticketId, agentUsername) {
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-  const ticketIndex = tickets.findIndex(t => t.id === ticketId);
-  if (ticketIndex === -1) return;
-
-  tickets[ticketIndex].assignedTo = agentUsername;
-  tickets[ticketIndex].status = agentUsername ? "In Progress" : "Pending";
-  localStorage.setItem("tickets", JSON.stringify(tickets));
-
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const ticket = tickets[ticketIndex];
-  const customer = users.find(u => u.email === ticket.createdBy);
-  const agent = users.find(u => u.username === agentUsername);
-  const admin = JSON.parse(localStorage.getItem("currentUser"));
-
-  if (customer && agentUsername) {
-    addNotification({
-      message: `Your ticket #${ticket.id} has been assigned to agent ${agentUsername}.`,
-      role: "customer",
-      email: customer.email,
-      timestamp: new Date().toLocaleString()
-    });
-  }
-
-  if (agent && agentUsername) {
-    addNotification({
-      message: `You have been assigned to ticket #${ticket.id} (${ticket.title}).`,
-      role: "agent",
-      email: agent.email,
-      timestamp: new Date().toLocaleString()
-    });
-  }
-
-  if (admin) {
-    addNotification({
-      message: `Ticket #${ticket.id} assigned to agent ${agentUsername}. Please monitor progress.`,
-      role: "admin",
-      timestamp: new Date().toLocaleString()
-    });
-  }
-
-  renderTickets();
-  renderStats();
-  updateNotifCount();
-}
-
-// ===== Change Ticket Status (new function) =====
-function changeTicketStatus(ticketId, newStatus) {
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-  const ticketIndex = tickets.findIndex(t => t.id === ticketId);
-  if (ticketIndex === -1) return;
-
-  tickets[ticketIndex].status = newStatus;
-  localStorage.setItem("tickets", JSON.stringify(tickets));
-
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const ticket = tickets[ticketIndex];
-  const customer = users.find(u => u.email === ticket.createdBy);
-  const admin = JSON.parse(localStorage.getItem("currentUser"));
-
-  if (customer) {
-    addNotification({
-      message: `Status of your ticket #${ticket.id} has been changed to "${newStatus}".`,
-      role: "customer",
-      email: customer.email,
-      timestamp: new Date().toLocaleString()
-    });
-  }
-
-  if (admin) {
-    addNotification({
-      message: `Ticket #${ticket.id} status changed to "${newStatus}".`,
-      role: "admin",
-      timestamp: new Date().toLocaleString()
-    });
-  }
-
-  renderTickets();
-  renderStats();
-  updateNotifCount();
-}
-
-// ===== Users =====
-function renderUsers() {
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const container = document.getElementById("users-list");
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-  if (!users.length) {
-    container.innerHTML = `<p class="empty-text">No users found</p>`;
+  if (!query) {
+    alert("Please enter a value to search.");
     return;
   }
 
-  const roleOrder = { admin: 1, agent: 2, customer: 3 };
-  users.sort((a, b) => roleOrder[a.role] - roleOrder[b.role]);
-
-  container.innerHTML = users.map((u, index) => `
-    <div class="user-card">
-      <div class="user-info">
-        <div class="user-avatar">👤</div>
-        <div>
-          <h4>${u.username}</h4>
-          <p>${u.email}</p>
-        </div>
-      </div>
-      <div class="user-actions">
-        <span class="role-badge ${u.role.toLowerCase()}">${u.role.toUpperCase()}</span>
-        ${currentUser && u.email === currentUser.email
-          ? `<button class="btn-delete" style="opacity:0.5; cursor:not-allowed;" disabled>Delete</button>`
-          : `<button class="btn-delete" onclick="deleteUser(${index})">Delete</button>`}
-      </div>
-    </div>`).join("");
+  try {
+    const response = await fetch(`http://localhost:3000/api/tickets?searchField=${field}&searchValue=${query}`);
+    const filteredTickets = await response.json();
+    renderFilteredTickets(filteredTickets);
+  } catch (error) {
+    console.error('Error searching tickets:', error);
+  }
 }
 
-function saveUser() {
+async function assignAgent(ticketId, agentUsername) {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    
+    const response = await fetch(`http://localhost:3000/api/tickets/${ticketId}/assign`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        agentUsername,
+        adminEmail: currentUser.email
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error);
+    }
+
+    await renderTickets();
+    await renderStats();
+    await updateNotifCount();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function deleteTicket(ticketId) {
+  if (!confirm("Are you sure you want to delete this ticket?")) return;
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/tickets/${ticketId}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error);
+    }
+
+    alert("Ticket deleted successfully!");
+    await renderTickets();
+    await renderStats();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+// ===== Users =====
+async function renderUsers() {
+  try {
+    const response = await fetch('http://localhost:3000/api/users');
+    const users = await response.json();
+    const container = document.getElementById("users-list");
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+    if (!users.length) {
+      container.innerHTML = `<p class="empty-text">No users found</p>`;
+      return;
+    }
+
+    container.innerHTML = users.map(user => `
+      <div class="user-card">
+        <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div>
+          <h4>${user.username}</h4>
+          <p>${user.email}</p>
+        </div>
+        </div>
+        <div class="user-actions">
+        <span class="role-badge ${user.role.toLowerCase()}">${user.role.toUpperCase()}</span>
+        ${currentUser && user.email === currentUser.email
+          ? `<button class="btn-delete" style="opacity:0.5; cursor:not-allowed;" disabled>Delete</button>`
+          : `<button class="btn-delete" onclick="deleteUser('${user.id}')">Delete</button>`}
+        </div>
+      </div>`).join("");
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
+
+async function saveUser() {
   const username = document.getElementById("new-username").value.trim();
   const email = document.getElementById("new-email").value.trim();
   const role = document.getElementById("new-role").value;
@@ -275,18 +265,32 @@ function saveUser() {
     return;
   }
 
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  if (users.find(u => u.username === username || u.email === email)) {
-    alert("Username or email already exists.");
-    return;
+  try {
+    const response = await fetch('http://localhost:3000/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        email,
+        role
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error);
+    }
+
+    alert("User created successfully!");
+    await renderUsers();
+    clearUserInputs();
+    document.getElementById("add-user-container").style.display = "none";
+  } catch (error) {
+    alert(error.message);
   }
-
-  users.push({ email, username, password: "Ticketpro@123", role });
-  localStorage.setItem("users", JSON.stringify(users));
-
-  renderUsers();
-  clearUserInputs();
-  document.getElementById("add-user-container").style.display = "none";
 }
 
 function clearUserInputs() {
@@ -295,34 +299,39 @@ function clearUserInputs() {
   document.getElementById("new-role").value = "customer";
 }
 
-function deleteUser(index) {
-  const users = JSON.parse(localStorage.getItem("users")) || [];
+async function deleteUser(userId) {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const targetUser = users[index];
-
-  if (currentUser && targetUser.email === currentUser.email) {
+  
+  // Check if trying to delete self
+  const users = await fetch('http://localhost:3000/api/users').then(r => r.json());
+  const targetUser = users.find(u => u.id === userId);
+  
+  if (targetUser && targetUser.email === currentUser.email) {
     alert("You cannot delete your own account.");
     return;
   }
 
   if (!confirm(`Delete user "${targetUser.username}"?`)) return;
 
-  users.splice(index, 1);
-  localStorage.setItem("users", JSON.stringify(users));
-  renderUsers();
-}
+  try {
+    const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-user-email': currentUser.email
+      }
+    });
 
-function deleteTicket(index) {
-  const tickets = JSON.parse(localStorage.getItem("tickets")) || [];
-  const targetTicket = tickets[index];
+    const data = await response.json();
 
-  if (!confirm(`Are you sure you want to delete ticket "${targetTicket.title}"?`)) return;
+    if (!response.ok) {
+      throw new Error(data.error);
+    }
 
-  tickets.splice(index, 1);
-  localStorage.setItem("tickets", JSON.stringify(tickets));
-  renderTickets();
-  renderStats();
-  alert("Ticket deleted successfully!");
+    alert("User deleted successfully!");
+    await renderUsers();
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 function showTab(tab) {
@@ -335,36 +344,31 @@ function showTab(tab) {
 // ===== Filter Tickets =====
 function renderFilteredTickets(filteredTickets) {
   const container = document.getElementById("tickets-list");
-  const users = JSON.parse(localStorage.getItem("users")) || [];
-  const agents = users.filter(u => u.role === "agent");
-  const allTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-
+  
   if (!filteredTickets.length) {
     container.innerHTML = `<p class="empty-text">No tickets found</p>`;
     return;
   }
 
-  container.innerHTML = filteredTickets.map(filteredTicket => {
-    const index = allTickets.findIndex(t => t.id === filteredTicket.id);
-    const assignedTo = filteredTicket.assignedTo || "";
-    const agentOptions = agents.map(agent => `<option value="${agent.username}" ${agent.username === assignedTo ? "selected" : ""}>${agent.username}</option>`).join("");
-
+  container.innerHTML = filteredTickets.map(ticket => {
+    const assignedTo = ticket.assignedTo || "";
+    
     return `
       <div class="ticket-card">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <h4>Issue: ${filteredTicket.title}</h4>
-          <button class="btn-delete" onclick="deleteTicket(${index})">Delete</button>
+          <h4>Issue: ${ticket.title}</h4>
+          <button class="btn-delete" onclick="deleteTicket('${ticket.id}')">Delete</button>
         </div>
-        <p><strong>Ticket ID:</strong> ${filteredTicket.id}</p>
-        <p><strong>Impact Level:</strong> ${filteredTicket.impact || 'N/A'}</p>
-        <p><strong>Description:</strong> ${filteredTicket.description || 'N/A'}</p>
-        <p><strong>Account Holder:</strong> ${filteredTicket.accountHolder || 'N/A'}</p>
-        <p><strong>Status:</strong> ${filteredTicket.status}</p>
+        <p><strong>Ticket ID:</strong> ${ticket.id}</p>
+        <p><strong>Impact Level:</strong> ${ticket.impact || 'N/A'}</p>
+        <p><strong>Description:</strong> ${ticket.description || 'N/A'}</p>
+        <p><strong>Account Holder:</strong> ${ticket.accountHolder || 'N/A'}</p>
+        <p><strong>Status:</strong> ${ticket.status}</p>
         <div style="display:flex;align-items:center;gap:10px;">
           <p style="margin:0;"><strong>Assigned To:</strong></p>
-          <select onchange="assignAgent('${filteredTicket.id}', this.value)">
+          <select onchange="assignAgent('${ticket.id}', this.value)">
             <option value="">Not assigned</option>
-            ${agentOptions}
+            <option value="${assignedTo}" selected>${assignedTo}</option>
           </select>
         </div>
       </div>`;
@@ -372,79 +376,86 @@ function renderFilteredTickets(filteredTickets) {
 }
 
 // ===== Notifications =====
-function toggleNotifications() {
+async function toggleNotifications() {
   const panel = document.getElementById("notif-panel");
   if (panel.style.display === "block") {
     panel.style.display = "none";
   } else {
-    renderNotifications();
+    await renderNotifications();
     panel.style.display = "block";
   }
 }
 
-function renderNotifications() {
+async function renderNotifications() {
   const notifList = document.getElementById("notif-list");
-  const sortValue = document.getElementById("notif-sort").value;
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    let notifications = await response.json();
 
-  notifications = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
+    notifList.innerHTML = notifications.length
+      ? notifications.map(notification => `
+        <div class="notif-item">
+          <div>
+            <small>${notification.timestamp}</small>
+            <p>${notification.message}</p>
+          </div>
+          <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
+        </div>`).join("")
+      : "<p style='text-align:center;'>No new notifications.</p>";
 
-  if (sortValue === "latest") notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  else if (sortValue === "earliest") notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  notifList.innerHTML = notifications.length
-    ? notifications.map((n, index) => `
-      <div class="notif-item">
-        <div>
-          <small>${n.timestamp}</small>
-          <p>${n.message}</p>
-        </div>
-        <button class="mark-read-btn" onclick="markAsRead(${index})" title="Mark as Read">&times;</button>
-      </div>`).join("")
-    : "<p style='text-align:center;'>No new notifications.</p>";
-
-  document.getElementById("notif-count").innerText = notifications.length;
-}
-
-function markAsRead(index) {
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const userNotifications = notifications.filter(n => n.email === currentUser.email || n.role === currentUser.role);
-
-  if (userNotifications[index]) {
-    const notifIndex = notifications.findIndex(n => n.timestamp === userNotifications[index].timestamp && n.message === userNotifications[index].message);
-    if (notifIndex > -1) notifications[notifIndex].read = true;
+    document.getElementById("notif-count").innerText = notifications.length;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
   }
-
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-  renderNotifications();
 }
 
-document.getElementById("clear-all-notifs").onclick = () => {
-  let notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+async function markAsRead(notificationId) {
+  try {
+    await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, {
+      method: 'PUT'
+    });
+    await renderNotifications();
+    await updateNotifCount();
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+  }
+}
+
+async function updateNotifCount() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    const notifications = await response.json();
+    document.getElementById("notif-count").innerText = notifications.length;
+  } catch (error) {
+    console.error('Error updating notification count:', error);
+  }
+}
 
-  notifications = notifications.map(n => {
-    if (n.email === currentUser.email || n.role === currentUser.role) n.read = true;
-    return n;
-  });
+// Clear all notifications
+document.getElementById("clear-all-notifs").onclick = async () => {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  
+  try {
+    const response = await fetch('http://localhost:3000/api/notifications/read-all', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: currentUser.email,
+        role: currentUser.role
+      })
+    });
 
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-  renderNotifications();
+    await renderNotifications();
+    await updateNotifCount();
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+  }
 };
 
 document.getElementById("notif-sort").addEventListener("change", renderNotifications);
-
-function updateNotifCount() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  const userNotifs = notifications.filter(n => !n.read && (n.email === currentUser.email || n.role === currentUser.role));
-  document.getElementById("notif-count").innerText = userNotifs.length;
-}
-
-function addNotification(notif) {
-  const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-  notifications.push({ ...notif, read: false });
-  localStorage.setItem("notifications", JSON.stringify(notifications));
-}
