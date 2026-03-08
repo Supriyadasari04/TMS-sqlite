@@ -3,21 +3,102 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Customer Portal - TicketPro</title>
+    <title>Customer Portal - SmartDesk</title>
 
     <link rel="stylesheet" href="../styles/base.css" />
     <link
       rel="stylesheet"
       href="../styles/customer.css"
     />
+    <link rel="stylesheet" href="../styles/ticket-detail.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      .ai-suggest-btn {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.4);
+      }
+      .ai-suggest-btn:hover { background: linear-gradient(135deg, #4f46e5, #9333ea); transform: translateY(-1px); }
+      .ai-feedback { 
+        display: none; 
+        background: #fdf2f8; 
+        border: 1px solid #fbcfe8; 
+        padding: 12px; 
+        border-radius: 10px; 
+        margin-top: 15px; 
+        font-size: 13px; 
+        color: #9d174d;
+        line-height: 1.5;
+      }
+      .ai-feedback strong { color: #831843; }
+      .ai-tag {
+        display: inline-block;
+        background: white;
+        border: 1px solid #fbcfe8;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-right: 4px;
+        font-weight: 600;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-content {
+        background-color: #fff;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .modal-body {
+        padding: 24px;
+        overflow-y: auto;
+      }
+      .modal-actions {
+        padding: 16px 24px;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+    </style>
   </head>
   <body>
     <nav class="customer-navbar">
-      <h2>Customer Portal</h2>
+      <div style="display:flex; align-items:center; gap:10px">
+        <img src="https://img.icons8.com/ios-filled/50/007bff/ticket.png" alt="Logo" style="width: 32px; height: 32px;">
+        <h2>Customer Portal</h2>
+      </div>
       <div class="customer-welcome">
         Welcome, <span id="customer-name">Customer</span>
       </div>
@@ -27,12 +108,7 @@
           <i class="fa-solid fa-bell"></i>
           <span id="notif-count">0</span>
         </div>
-        <a
-          href="./landing.html"
-          id="nav-right-link"
-          onclick="localStorage.removeItem('currentUser')"
-          >Logout</a
-        >
+        <a href="#" onclick="logout(); return false;" id="nav-right-link">Logout</a>
       </div>
     </nav>
 
@@ -69,68 +145,76 @@
     <!-- Modal -->
     <div id="ticket-modal" class="modal">
       <div class="modal-content">
-        <h3>Create New Ticket</h3>
-        <p>Provide details about your issue so we can assist you quickly.</p>
+        <div class="modal-body">
+          <h3>Create New Ticket</h3>
+          <p>Provide details about your issue so we can assist you quickly.</p>
 
-        <div class="input-grid">
-          <div class="input-group">
-            <label>Account Holder Name <span style="color: red">*</span></label>
-            <input
-              type="text"
-              id="account-holder"
-              placeholder="Enter your full name"
-            />
+          <div class="input-grid">
+            <div class="input-group">
+              <label>Account Holder Name <span style="color: red">*</span></label>
+              <input
+                type="text"
+                id="account-holder"
+                placeholder="Enter your full name"
+              />
+            </div>
+            <!-- ... other fields remain same ... -->
+            <div class="input-group">
+              <label>Bank Account Number <span style="color: red">*</span></label>
+              <input
+                type="text"
+                id="account-number"
+                placeholder="Enter your account number"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>IFSC Code <span style="color: red">*</span></label>
+              <input
+                type="text"
+                id="ifsc-code"
+                placeholder="Enter your IFSC code"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>Issue Type <span style="color: red">*</span></label>
+              <select id="ticket-subject">
+                <option value="">Select issue type</option>
+                <option>Login Issue</option>
+                <option>Password Reset</option>
+                <option>Account Access</option>
+                <option>Fund Transfer Issue</option>
+                <option>Card Block / Lost Card</option>
+                <option>Unauthorized Transaction</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label>Impact level <span style="color: red">*</span></label>
+              <select id="impact">
+                <option value="">Select Impact</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
           </div>
 
           <div class="input-group">
-            <label>Bank Account Number <span style="color: red">*</span></label>
-            <input
-              type="text"
-              id="account-number"
-              placeholder="Enter your account number"
-            />
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="margin-bottom: 0;">Description <span style="color: red">*</span></label>
+              <button id="ai-analyze-btn" class="ai-suggest-btn">
+                <i class="fas fa-magic"></i> Analyze with AI
+              </button>
+            </div>
+            <textarea id="ticket-description" placeholder="Provide detailed information about your issue"></textarea>
+            <div id="ai-feedback" class="ai-feedback">
+              <i class="fas fa-robot"></i> <strong>AI Analysis:</strong> <span id="ai-reason"></span><br/>
+              <div style="margin-top: 5px;" id="ai-tags-container"></div>
+            </div>
           </div>
-
-          <div class="input-group">
-            <label>IFSC Code <span style="color: red">*</span></label>
-            <input
-              type="text"
-              id="ifsc-code"
-              placeholder="Enter your IFSC code"
-            />
-          </div>
-
-          <div class="input-group">
-            <label>Issue Type <span style="color: red">*</span></label>
-            <select id="ticket-subject">
-              <option value="">Select issue type</option>
-              <option>Login Issue</option>
-              <option>Password Reset</option>
-              <option>Account Access</option>
-              <option>Fund Transfer Issue</option>
-              <option>Card Block / Lost Card</option>
-              <option>Unauthorized Transaction</option>
-              <option>Other</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label>Impact level <span style="color: red">*</span></label>
-            <select id="impact">
-              <option value="">Select Impact</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="input-group">
-          <label>Description <span style="color: red">*</span></label>
-          <textarea
-            id="ticket-description"
-            placeholder="Provide detailed information about your issue"
-          ></textarea>
         </div>
 
         <div class="modal-actions">
@@ -185,6 +269,8 @@
     </div>
 
 
+    <script src="../scripts/api.js"></script>
+    <script src="../scripts/ticket-detail.js"></script>
     <script src="../scripts/customer.js"></script>
   </body>
 </html>

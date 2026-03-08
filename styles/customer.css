@@ -13,7 +13,10 @@ body {
 }
 
 /* ===== Global Font Reset ===== */
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
   font-size: 14px;
 }
@@ -163,7 +166,7 @@ button, input, select, textarea {
 }
 
 /* ===== Navigation Link ===== */
-#nav-right-link{
+#nav-right-link {
   text-decoration: none;
   color: var(--text-dark);
   font-weight: 500;
@@ -218,7 +221,7 @@ mark {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -230,7 +233,7 @@ mark {
   padding: 24px;
   border-radius: 8px;
   width: 320px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
 
@@ -283,7 +286,7 @@ mark {
   overflow-y: auto;
   background: white;
   border: 1px solid #ccc;
-  box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 1001;
   padding: 10px;
   border-radius: 8px;

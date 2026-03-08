@@ -1,114 +1,91 @@
 // scripts/signup.js
-let isSubmitting = false; // Add this at the top
-
-function resetButton() {
-    isSubmitting = false;
-    const submitButton = document.querySelector('.btn-primary');
-    if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Create Account';
-    }
-}
-
-function redirectToRole(role) {
-    console.log("Executing redirect for role:", role);
-    
-    if (role === "admin") {
-        window.location.href = "admin.html";
-    } else if (role === "customer") {
-        window.location.href = "customer.html";
-    } else if (role === "agent") {
-        window.location.href = "agent.html";
-    } else {
-        window.location.href = "signin.html";
-    }
-}
 
 async function handleSignUp(event) {
-    console.log("handleSignUp function started");
-    
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        console.log("Event prevented");
+    if (event) event.preventDefault();
+
+    const email = document.getElementById('signup-email').value.trim();
+    const username = document.getElementById('signup-username').value.trim();
+    const password = document.getElementById('signup-password').value.trim();
+    const confirm = document.getElementById('signup-confirm-password').value.trim();
+    const role = document.getElementById('signup-role').value;
+
+    if (!email || !username || !password || !role) {
+        alert('Please fill in all fields.');
+        return;
     }
 
-    // Prevent double submission
-    if (isSubmitting) {
-        console.log("Already submitting, blocking...");
-        return false;
-    }
-
-    isSubmitting = true;
-    console.log("isSubmitting set to true");
-
-    // Fix: Use class selector since your button doesn't have ID
-    const submitButton = document.querySelector('.btn-primary');
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = 'Creating Account...';
-        console.log("Button disabled and text changed");
-    }
-
-    const email = document.getElementById("signup-email").value.trim();
-    const username = document.getElementById("signup-username").value.trim();
-    const password = document.getElementById("signup-password").value.trim();
-    const confirm = document.getElementById("signup-confirm-password").value.trim();
-    const role = document.getElementById("signup-role").value;
-
-    console.log("Form values:", { email, username, role });
-
-    if (!email || !username || !password || !confirm || !role) {
-        alert("All fields are required");
-        resetButton();
-        return false;
+    if (role !== 'customer' && !email.toLowerCase().endsWith('@smartdesk.com')) {
+        alert('Only internal @smartdesk.com accounts can register as Agent or Admin. You have been defaulted to Customer.');
+        document.getElementById('signup-role').value = 'customer';
+        return;
     }
 
     if (password !== confirm) {
-        alert("Passwords do not match");
-        resetButton();
-        return false;
+        alert('Passwords do not match!');
+        return;
     }
+
+    const signupBtn = document.querySelector('.btn-primary');
+    signupBtn.disabled = true;
+    signupBtn.innerText = 'Creating Account...';
 
     try {
-        console.log("Making API call to /api/signup...");
-        
-        const response = await fetch('http://localhost:3000/api/signup', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                username,
-                password,
-                role
-            })
+        // 1. Sign up with Supabase Auth
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    username: username,
+                    role: role
+                }
+            }
         });
 
-        console.log("Response status:", response.status);
-        
-        const data = await response.json();
-        console.log("Response data:", data);
+        if (error) throw error;
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Signup failed');
+        if (data.user) {
+            // Check if email already existed in Supabase
+            if (data.user.identities && data.user.identities.length === 0) {
+                throw new Error("This email is already registered. Please sign in instead.");
+            }
+            // 2. Sync Profile to public.users (Critical for legacy compatibility)
+            // If auto-confirm is OFF, session may be null. 
+            // If ON, we can sync immediately. 
+            if (data.session) {
+                await syncUserProfile(username, role);
+                alert('Welcome! Your professional account is ready.');
+                window.location.href = role === 'admin' ? 'admin.html' : role === 'agent' ? 'agent.html' : 'customer.html';
+            } else {
+                alert('Account created! Please check your email (' + email + ') to confirm your professional profile.');
+                window.location.href = 'signin.html';
+            }
         }
-
-        console.log("Signup successful!");
-        console.log("Storing user in localStorage:", data.user);
-        
-        localStorage.setItem("currentUser", JSON.stringify(data.user));
-
-        // Redirect immediately without alert
-        console.log("Redirecting immediately to:", role);
-        redirectToRole(role);
-        
     } catch (error) {
-        console.error('Signup error:', error);
         alert(error.message);
-        resetButton();
+        console.error('Signup error:', error);
+    } finally {
+        signupBtn.disabled = false;
+        signupBtn.innerText = 'Create Account';
     }
-    
-    return false;
+}
+
+// Event listener
+document.addEventListener('DOMContentLoaded', () => {
+    const signupBtn = document.querySelector('.btn-primary');
+    if (signupBtn) signupBtn.onclick = handleSignUp;
+});
+
+// Toggle password visibility
+function togglePassword(inputId, icon) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
 }

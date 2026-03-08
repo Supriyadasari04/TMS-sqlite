@@ -3,23 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign In - TicketPro</title>
+  <title>Sign In - SmartDesk</title>
 
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/signin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="auth-container">
     <img src="https://img.icons8.com/ios-filled/50/007bff/ticket.png" alt="Logo" class="logo" style="width: 48px; height: 48px;">
     <h1>Welcome Back</h1>
-    <p>Sign in to your TicketPro account</p>
+    <p>Sign in to your SmartDesk account</p>
 
     <div>
       <h2 style="margin-bottom: 16px;">Sign In</h2>
       <p style="color: var(--text-light); margin-bottom: 24px;">Enter your credentials to access your dashboard</p>
       
-      <input id="signin-username" type="text" class="auth-input" placeholder="Enter a username" />
-      <input id="signin-password" type="password" class="auth-input" placeholder="Enter your password" />
+      <input id="signin-email" type="email" class="auth-input" placeholder="Enter your email" />
+      
+      <div class="password-wrapper">
+        <input id="signin-password" type="password" class="auth-input" placeholder="Enter your password" />
+        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signin-password', this)"></i>
+      </div>
+
+      <div style="text-align: right; margin-top: -10px; margin-bottom: 16px;">
+        <a href="#" style="font-size: 14px; color: var(--primary); text-decoration: none; font-weight: 500;" onclick="handleForgotPassword(event)">Forgot Password?</a>
+      </div>
       
       <button class="btn-primary" style="width: 100%;" onclick="handleSignIn()">Sign In</button>
     </div>
@@ -29,6 +39,7 @@
       <a class="back-link" href="./landing.html">← Back to home</a>
     </div>
   </div>
+    <script src="../scripts/api.js"></script>
     <script src="../scripts/signin.js"></script>
 </body>
 </html>

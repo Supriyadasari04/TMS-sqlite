@@ -3,26 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up - TicketPro</title>
+  <title>Sign Up - SmartDesk</title>
 
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/signup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 </head>
 <body>
   <div class="auth-container">
     <img src="https://img.icons8.com/ios-filled/50/007bff/ticket.png" alt="Logo" class="logo" style="width: 48px; height: 48px;">
     <h1>Create Account</h1>
-    <p>Join TicketPro and get started today</p>
+    <p>Join SmartDesk and get started today</p>
 
     <div>
       <h2 style="margin-bottom: 16px;">Sign Up</h2>
-      <p style="color: var(--text-light); margin-bottom: 24px;">Create your TicketPro account</p>
+      <p style="color: var(--text-light); margin-bottom: 24px;">Create your SmartDesk account</p>
 
       <input id="signup-email" type="email" class="auth-input" placeholder="Enter your email" />
       <input id="signup-username" type="text" class="auth-input" placeholder="Enter a username" />
-      <input id="signup-password" type="password" class="auth-input" placeholder="Enter password" />
-      <input id="signup-confirm-password" type="password" class="auth-input" placeholder="Confirm your password" />
+
+      <div class="password-wrapper">
+        <input id="signup-password" type="password" class="auth-input" placeholder="Enter password" />
+        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-password', this)"></i>
+      </div>
+      
+      <div class="password-wrapper">
+        <input id="signup-confirm-password" type="password" class="auth-input" placeholder="Confirm your password" />
+        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-confirm-password', this)"></i>
+      </div>
       
       <select id="signup-role" class="auth-input">
         <option value="" disabled selected>Select your role</option>
@@ -39,6 +49,7 @@
       <a class="back-link" href="./landing.html">← Back to home</a>
     </div>
   </div>
+  <script src="../scripts/api.js"></script>
   <script src="../scripts/signup.js"></script>
 </body>
 </html>

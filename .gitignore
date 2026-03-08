@@ -1,0 +1,18 @@
+# Environment variables — NEVER commit these
+backend/.env
+.env
+
+# Node dependencies
+node_modules/
+backend/node_modules/
+
+# SQLite database file (now using Supabase)
+backend/*.db
+
+# Migration scripts (no longer needed after migration)
+backend/migrate-passwords.js
+backend/migrate-to-supabase.js
+
+# OS files
+.DS_Store
+Thumbs.db

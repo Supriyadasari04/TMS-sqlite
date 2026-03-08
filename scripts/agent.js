@@ -1,21 +1,23 @@
+// scripts/agent.js
+
 // ===== On Page Load =====
 window.onload = async function () {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser || currentUser.role !== "agent") {
-    window.location.href = "signin.html";
+  const currentUser = getCurrentUser();
+  if (!currentUser || currentUser.role !== 'agent') {
+    window.location.href = '../html/signin.html';
     return;
   }
 
-  document.getElementById("agent-name").innerText = currentUser.username;
+  document.getElementById('agent-name').innerText = currentUser.username;
 
-  if (currentUser.password === "Ticketpro@123" || currentUser.needsPasswordReset) {
+  // ✅ FIX 4: Only check needsPasswordReset — no password in localStorage
+  if (currentUser.needsPasswordReset) {
     showPasswordResetModal();
   }
 
-  // Event listeners for search
-  document.getElementById("search-assigned").addEventListener("input", renderAssigned);
-  document.getElementById("search-inprogress").addEventListener("input", renderInProgress);
-  document.getElementById("search-resolved").addEventListener("input", renderResolved);
+  document.getElementById('search-assigned').addEventListener('input', renderAssigned);
+  document.getElementById('search-inprogress').addEventListener('input', renderInProgress);
+  document.getElementById('search-resolved').addEventListener('input', renderResolved);
 
   await renderStats();
   await renderAllTabs();
@@ -26,51 +28,34 @@ window.onload = async function () {
    Password Reset Modal
 ============================== */
 async function showPasswordResetModal() {
-  const modal = document.getElementById("password-reset-modal");
-  modal.style.display = "flex";
+  const modal = document.getElementById('password-reset-modal');
+  modal.style.display = 'flex';
 
-  document.getElementById("save-new-password").onclick = async function () {
-    const newPass = document.getElementById("new-password").value.trim();
-    const confirm = document.getElementById("confirm-password").value.trim();
+  document.getElementById('save-new-password').onclick = async function () {
+    const newPass = document.getElementById('new-password').value.trim();
+    const confirm = document.getElementById('confirm-password').value.trim();
 
-    if (!newPass || !confirm) {
-      alert("Please fill both fields.");
-      return;
-    }
-    if (newPass !== confirm) {
-      alert("Passwords do not match!");
-      return;
-    }
-    if (newPass === "Ticketpro@123") {
-      alert("Please choose a different password.");
-      return;
-    }
+    if (!newPass || !confirm) { alert('Please fill both fields.'); return; }
+    if (newPass !== confirm) { alert('Passwords do not match!'); return; }
+    if (newPass === 'Smartdesk@123') { alert('Please choose a different password.'); return; }
 
     try {
-      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-      const response = await fetch(`http://localhost:3000/api/user/${currentUser.id}/password`, {
+      const currentUser = getCurrentUser();
+      // ✅ FIX 3: authFetch handles URL + JWT
+      const response = await authFetch(`/api/user/${currentUser.id}/password`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          newPassword: newPass,
-          isPasswordReset: true  // This tells the backend to skip current password verification
-        })
+        body: JSON.stringify({ newPassword: newPass, isPasswordReset: true })
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
 
-      if (!response.ok) {
-        throw new Error(data.error);
-      }
+      // ✅ FIX 4: Only update the flag — no password stored
+      const updatedUser = { ...currentUser, needsPasswordReset: false };
+      setCurrentUser(updatedUser);
 
-      // Update local storage
-      const updatedUser = { ...currentUser, password: newPass, needsPasswordReset: false };
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
-      alert("Password updated successfully!");
-      modal.style.display = "none";
+      alert('Password updated successfully!');
+      modal.style.display = 'none';
     } catch (error) {
       alert(error.message);
     }
@@ -82,23 +67,24 @@ async function showPasswordResetModal() {
 ============================== */
 async function renderStats() {
   try {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    const response = await fetch(`http://localhost:3000/api/agent/stats?agentUsername=${currentUser.username}`);
+    const currentUser = getCurrentUser();
+    // ✅ FIX 3: authFetch with relative URL
+    const response = await authFetch(`/api/agent/stats?agentUsername=${currentUser.username}`);
     const stats = await response.json();
 
-    document.getElementById("assigned-tickets").innerText = stats.total || 0;
-    document.getElementById("pending-tickets").innerText = stats.pending || 0;
-    document.getElementById("inprogress-tickets").innerText = stats.inProgress || 0;
-    document.getElementById("resolved-tickets").innerText = stats.resolved || 0;
+    document.getElementById('assigned-tickets').innerText = stats.total || 0;
+    document.getElementById('pending-tickets').innerText = stats.pending || 0;
+    document.getElementById('inprogress-tickets').innerText = stats.inProgress || 0;
+    document.getElementById('resolved-tickets').innerText = stats.resolved || 0;
   } catch (error) {
     console.error('Error fetching agent stats:', error);
   }
 }
 
 function showTab(tab) {
-  ["assigned", "inprogress", "resolved"].forEach(name => {
-    document.getElementById(`${name}-section`).style.display = tab === name ? "block" : "none";
-    document.getElementById(`tab-${name}`).classList.toggle("active-tab", tab === name);
+  ['assigned', 'inprogress', 'resolved'].forEach(name => {
+    document.getElementById(`${name}-section`).style.display = tab === name ? 'block' : 'none';
+    document.getElementById(`tab-${name}`).classList.toggle('active-tab', tab === name);
   });
 }
 
@@ -106,95 +92,92 @@ function showTab(tab) {
    Ticket Handling
 ============================== */
 async function renderAssigned() {
-  const search = document.getElementById("search-assigned").value.toLowerCase();
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+  const search = document.getElementById('search-assigned').value.toLowerCase();
+  const currentUser = getCurrentUser();
+
   try {
-    const response = await fetch(`http://localhost:3000/api/agent/tickets?agentUsername=${currentUser.username}&status=all&search=${search}`);
+    const response = await authFetch(`/api/agent/tickets?agentUsername=${currentUser.username}&status=all&search=${encodeURIComponent(search)}`);
     const assignedTickets = await response.json();
-    
-    const container = document.getElementById("assigned-list");
+
+    const container = document.getElementById('assigned-list');
     if (!assignedTickets.length) {
       container.innerHTML = `<p class="empty-text">No assigned tickets</p>`;
       return;
     }
 
     container.innerHTML = assignedTickets.map(ticket => `
-      <div class="ticket-card">
+      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
         <h4>${ticket.title}</h4>
         <p><strong>Ticket ID:</strong> #${ticket.id}</p>
         <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Description:</strong> ${ticket.description || 'N/A'}</p>
         <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
         <p><strong>Status:</strong> ${ticket.status}</p>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:10px;" onclick="event.stopPropagation()">
           <label><strong>Update Status:</strong></label>
           <select onchange="updateStatus('${ticket.id}', this.value)">
-            <option value="Pending" ${ticket.status === "Pending" ? "selected" : ""}>Pending</option>
-            <option value="In Progress" ${ticket.status === "In Progress" ? "selected" : ""}>In Progress</option>
-            <option value="Resolved" ${ticket.status === "Resolved" ? "selected" : ""}>Resolved</option>
+            <option value="Pending" ${ticket.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+            <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
           </select>
         </div>
       </div>
-    `).join("");
+    `).join('');
   } catch (error) {
     console.error('Error fetching assigned tickets:', error);
   }
 }
 
 async function renderInProgress() {
-  const search = document.getElementById("search-inprogress").value.toLowerCase();
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+  const search = document.getElementById('search-inprogress').value.toLowerCase();
+  const currentUser = getCurrentUser();
+
   try {
-    const response = await fetch(`http://localhost:3000/api/agent/tickets?agentUsername=${currentUser.username}&status=In Progress&search=${search}`);
+    const response = await authFetch(`/api/agent/tickets?agentUsername=${currentUser.username}&status=In Progress&search=${encodeURIComponent(search)}`);
     const inProgressTickets = await response.json();
-    
-    const container = document.getElementById("inprogress-list");
+
+    const container = document.getElementById('inprogress-list');
     if (!inProgressTickets.length) {
       container.innerHTML = `<p class="empty-text">No in-progress tickets</p>`;
       return;
     }
 
     container.innerHTML = inProgressTickets.map(ticket => `
-      <div class="ticket-card">
+      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
         <h4>${ticket.title}</h4>
         <p><strong>Ticket ID:</strong> #${ticket.id}</p>
         <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Description:</strong> ${ticket.description || 'N/A'}</p>
         <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
         <p><strong>Status:</strong> ${ticket.status}</p>
       </div>
-    `).join("");
+    `).join('');
   } catch (error) {
     console.error('Error fetching in-progress tickets:', error);
   }
 }
 
 async function renderResolved() {
-  const search = document.getElementById("search-resolved").value.toLowerCase();
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+  const search = document.getElementById('search-resolved').value.toLowerCase();
+  const currentUser = getCurrentUser();
+
   try {
-    const response = await fetch(`http://localhost:3000/api/agent/tickets?agentUsername=${currentUser.username}&status=Resolved&search=${search}`);
+    const response = await authFetch(`/api/agent/tickets?agentUsername=${currentUser.username}&status=Resolved&search=${encodeURIComponent(search)}`);
     const resolvedTickets = await response.json();
-    
-    const container = document.getElementById("resolved-list");
+
+    const container = document.getElementById('resolved-list');
     if (!resolvedTickets.length) {
       container.innerHTML = `<p class="empty-text">No resolved tickets</p>`;
       return;
     }
 
     container.innerHTML = resolvedTickets.map(ticket => `
-      <div class="ticket-card">
+      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
         <h4>${ticket.title}</h4>
         <p><strong>Ticket ID:</strong> #${ticket.id}</p>
         <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Description:</strong> ${ticket.description || 'N/A'}</p>
         <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
         <p><strong>Status:</strong> ${ticket.status}</p>
       </div>
-    `).join("");
+    `).join('');
   } catch (error) {
     console.error('Error fetching resolved tickets:', error);
   }
@@ -208,24 +191,15 @@ async function renderAllTabs() {
 
 async function updateStatus(ticketId, newStatus) {
   try {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    
-    const response = await fetch(`http://localhost:3000/api/tickets/${ticketId}/status`, {
+    const currentUser = getCurrentUser();
+
+    const response = await authFetch(`/api/tickets/${ticketId}/status`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: newStatus,
-        agentUsername: currentUser.username
-      })
+      body: JSON.stringify({ status: newStatus, agentUsername: currentUser.username })
     });
 
     const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error);
-    }
+    if (!response.ok) throw new Error(data.error);
 
     await renderStats();
     await renderAllTabs();
@@ -239,27 +213,27 @@ async function updateStatus(ticketId, newStatus) {
    Notifications
 ============================== */
 async function toggleNotifications() {
-  const panel = document.getElementById("notif-panel");
-  if (panel.style.display === "block") {
-    panel.style.display = "none";
+  const panel = document.getElementById('notif-panel');
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
   } else {
     await renderNotifications();
-    panel.style.display = "block";
+    panel.style.display = 'block';
   }
 }
 
 async function renderNotifications() {
-  const notifList = document.getElementById("notif-list");
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+  const notifList = document.getElementById('notif-list');
+  const currentUser = getCurrentUser();
+
   try {
-    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
     let notifications = await response.json();
 
-    const sortValue = document.getElementById("notif-sort").value;
-    if (sortValue === "latest") {
+    const sortValue = document.getElementById('notif-sort').value;
+    if (sortValue === 'latest') {
       notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    } else if (sortValue === "earliest") {
+    } else if (sortValue === 'earliest') {
       notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     }
 
@@ -272,10 +246,10 @@ async function renderNotifications() {
           </div>
           <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
         </div>
-      `).join("")
+      `).join('')
       : "<p style='text-align:center;'>No new notifications.</p>";
 
-    document.getElementById("notif-count").innerText = notifications.length;
+    document.getElementById('notif-count').innerText = notifications.length;
   } catch (error) {
     console.error('Error fetching notifications:', error);
   }
@@ -283,9 +257,7 @@ async function renderNotifications() {
 
 async function markAsRead(notificationId) {
   try {
-    await fetch(`http://localhost:3000/api/notifications/${notificationId}/read`, {
-      method: 'PUT'
-    });
+    await authFetch(`/api/notifications/${notificationId}/read`, { method: 'PUT' });
     await renderNotifications();
     await updateNotifCount();
   } catch (error) {
@@ -294,33 +266,23 @@ async function markAsRead(notificationId) {
 }
 
 async function updateNotifCount() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+  const currentUser = getCurrentUser();
   try {
-    const response = await fetch(`http://localhost:3000/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
+    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
     const notifications = await response.json();
-    document.getElementById("notif-count").innerText = notifications.length;
+    document.getElementById('notif-count').innerText = notifications.length;
   } catch (error) {
     console.error('Error updating notification count:', error);
   }
 }
 
-// Clear all notifications
-document.getElementById("clear-all-notifs").onclick = async () => {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
+document.getElementById('clear-all-notifs').onclick = async () => {
+  const currentUser = getCurrentUser();
   try {
-    const response = await fetch('http://localhost:3000/api/notifications/read-all', {
+    await authFetch('/api/notifications/read-all', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: currentUser.email,
-        role: currentUser.role
-      })
+      body: JSON.stringify({ email: currentUser.email, role: currentUser.role })
     });
-
     await renderNotifications();
     await updateNotifCount();
   } catch (error) {
@@ -328,4 +290,4 @@ document.getElementById("clear-all-notifs").onclick = async () => {
   }
 };
 
-document.getElementById("notif-sort").addEventListener("change", renderNotifications);
+document.getElementById('notif-sort').addEventListener('change', renderNotifications);

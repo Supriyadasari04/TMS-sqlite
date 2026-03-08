@@ -1,47 +1,72 @@
 // scripts/signin.js
+
 async function handleSignIn(event) {
   if (event) event.preventDefault();
 
-  const username = document.getElementById("signin-username").value.trim();
-  const password = document.getElementById("signin-password").value.trim();
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value.trim();
 
-  if (!username || !password) {
-    alert("Username and password are required!");
+  if (!email || !password) {
+    alert('Email and password are required!');
     return;
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/signin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username,
-        password
-      })
-    });
+    let user, token, userRole, username;
 
-    const data = await response.json();
+    // A. Demo Login Bypass for @smartdesk.com accounts
+    if (email.toLowerCase().endsWith('@smartdesk.com')) {
+      const response = await fetch('/api/signin/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Professional login failed');
+
+      token = data.token;
+      user = data.user;
+      userRole = user.role;
+      username = user.username;
+    }
+    // B. Standard Supabase Auth
+    else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      token = data.session.access_token;
+      user = data.user;
+      userRole = user.user_metadata?.role || 'customer';
+      username = user.user_metadata?.username || email.split('@')[0];
     }
 
-    // Store current user in localStorage for session management
-    localStorage.setItem("currentUser", JSON.stringify(data.user));
+    // 2. Set standard session info (backward compatibility)
+    setToken(token);
+    setCurrentUser({
+      ...user,
+      role: userRole,
+      username: username
+    });
 
-    alert(data.message);
-
-    // Redirect based on role
-    if (data.user.role === "admin") {
-      window.location.href = "admin.html";
-    } else if (data.user.role === "customer") {
-      window.location.href = "customer.html";
-    } else if (data.user.role === "agent") {
-      window.location.href = "agent.html";
+    // 3. Redirect based on role
+    if (userRole === 'admin') {
+      window.location.href = 'admin.html';
+    } else if (userRole === 'agent') {
+      window.location.href = 'agent.html';
     } else {
-      alert("No dashboard available for this role.");
+      window.location.href = 'customer.html';
+    }
+    if (userRole === 'admin') {
+      window.location.href = 'admin.html';
+    } else if (userRole === 'agent') {
+      window.location.href = 'agent.html';
+    } else {
+      window.location.href = 'customer.html';
     }
   } catch (error) {
     alert(error.message);
@@ -49,41 +74,58 @@ async function handleSignIn(event) {
   }
 }
 
-// Add event listener for form submission
-document.addEventListener('DOMContentLoaded', function() {
-  const form = document.querySelector('.auth-container div');
+// Event listener for button click
+document.addEventListener('DOMContentLoaded', function () {
   const signinButton = document.querySelector('.btn-primary');
-  
-  if (form) {
-    form.addEventListener('submit', handleSignIn);
-  }
-  
-  // Also keep the onclick handler for backward compatibility
   if (signinButton) {
     signinButton.onclick = handleSignIn;
   }
 });
 
-// Utility function to check if user is logged in (for other pages)
+// Utility to check if user is logged in
 async function checkAuth() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  
-  if (!currentUser) {
-    window.location.href = "signin.html";
+  const currentUser = getCurrentUser();
+  const token = await getToken();
+
+  if (!currentUser || !token) {
+    window.location.href = 'signin.html';
     return null;
   }
+  return currentUser;
+}
 
-  // Verify user still exists in database
+// Toggle password visibility
+function togglePassword(inputId, icon) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+// Handle Forgot Password
+async function handleForgotPassword(e) {
+  if (e) e.preventDefault();
+  const email = prompt("Please enter your email address to reset your password:");
+  if (!email) return;
+
+  if (email.toLowerCase().endsWith('@smartdesk.com')) {
+    alert("Professional demo accounts cannot reset their password via email. Please contact HeadAdmin.");
+    return;
+  }
+
   try {
-    const response = await fetch(`http://localhost:3000/api/user/${currentUser.id}`);
-    if (!response.ok) {
-      localStorage.removeItem("currentUser");
-      window.location.href = "signin.html";
-      return null;
-    }
-    return currentUser;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/html/reset-password.html'
+    });
+    if (error) throw error;
+    alert("Password reset email sent! Please check your inbox.");
   } catch (error) {
-    console.error('Auth check failed:', error);
-    return currentUser; // Fallback to localStorage user
+    alert("Error: " + error.message);
   }
 }

@@ -26,6 +26,27 @@
   font-size: 16px;
 }
 
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper .auth-input {
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
+  color: var(--text-light);
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+}
+
 select.auth-input {
   background-color: var(--white);
 }
