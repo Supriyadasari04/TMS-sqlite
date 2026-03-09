@@ -3,10 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Agent Dashboard - SmartDesk</title>
-
+    <title>Agent Workspace — SmartDesk</title>
     <link rel="stylesheet" href="../styles/base.css" />
-    <link rel="stylesheet" href="../styles/customer.css" />
     <link rel="stylesheet" href="../styles/agent.css" />
     <link rel="stylesheet" href="../styles/ticket-detail.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -16,18 +14,14 @@
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo">
-                <h2>SmartDesk</h2>
+            <div class="sidebar-header" style="display: flex; align-items: center; gap: 8px; padding-bottom: 16px;">
+                <img src="https://img.icons8.com/ios-filled/50/AFCBFF/ticket.png" alt="Logo" style="width: 20px; height: 20px;">
+                <h2 class="logo-text" style="font-size: 16px;">SmartDesk</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="agent.html" class="nav-item active">
                     <i class="fas fa-th-large"></i>
                     <span>Workspace</span>
-                </a>
-                <a href="profile.html" class="nav-item">
-                    <i class="fas fa-user-circle"></i>
-                    <span>Profile</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -35,84 +29,73 @@
                     <div class="side-avatar" id="side-avatar">A</div>
                     <div class="user-meta">
                         <span class="name" id="agent-name-side">Agent</span>
-                        <span class="role-label">Support Agent</span>
+                        <span class="role-label">Support Specialist</span>
                     </div>
                 </div>
-                <a href="#" class="nav-item" onclick="logout(); return false;" style="margin-top: 10px; color: var(--error);">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <header style="padding: 24px 32px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
+            <header style="padding: 16px 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                   <h1>Agent Workspace</h1>
-                   <p>Welcome back, <span id="agent-name" style="color: var(--primary); font-weight: 600;">Agent</span></p>
+                   <h1 style="font-size: 18px;">Support Workspace</h1>
+                   <p style="font-size: 12px; color: var(--text-secondary);">Active agent: <span id="agent-name" style="font-weight: 600;">Agent</span></p>
                 </div>
+                <button class="btn-outline" onclick="logout()" style="height: 30px; font-size: 11px;">Sign Out</button>
             </header>
 
-            <div style="padding: 32px;">
-                <section class="customer-stats">
-                    <div class="stat-card">
-                        <h3 id="assigned-tickets">0</h3>
-                        <p>Total Assigned</p>
+            <div style="padding: 24px;">
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px;">
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Assigned</span>
+                        <h3 id="assigned-tickets" style="font-size: 18px; margin-top: 4px;">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="pending-tickets">0</h3>
-                        <p>Pending</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Pending</span>
+                        <h3 id="pending-tickets" style="font-size: 18px; margin-top: 4px;">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="inprogress-tickets">0</h3>
-                        <p>In Progress</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">In Progress</span>
+                        <h3 id="inprogress-tickets" style="font-size: 18px; margin-top: 4px; color: var(--info);">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="resolved-tickets">0</h3>
-                        <p>Resolved</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Resolved</span>
+                        <h3 id="resolved-tickets" style="font-size: 18px; margin-top: 4px; color: var(--success);">0</h3>
                     </div>
+                </div>
+
+                <div class="ticket-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2 style="font-size: 15px;">Inbox Management</h2>
+                    <div class="tab-buttons" style="display: flex; gap: 4px;">
+                        <button onclick="showTab('assigned')" id="tab-assigned" class="btn-primary" style="height: 28px; font-size: 11px; padding: 0 10px;">Assigned</button>
+                        <button onclick="showTab('inprogress')" id="tab-inprogress" class="btn-outline" style="height: 28px; font-size: 11px; padding: 0 10px;">In Progress</button>
+                        <button onclick="showTab('resolved')" id="tab-resolved" class="btn-outline" style="height: 28px; font-size: 11px; padding: 0 10px;">Resolved</button>
+                    </div>
+                </div>
+
+                <!-- Assigned Tab -->
+                <section id="assigned-section" class="admin-section">
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="search-assigned" placeholder="Filter assigned tickets..." style="height: 32px; font-size: 12px;" />
+                    </div>
+                    <div id="assigned-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </section>
 
-                <section class="ticket-section" style="margin-top: 32px;">
-                    <div class="ticket-header" style="margin-bottom: 24px;">
-                        <h3>Ticket Management</h3>
-                        <div class="tab-buttons" style="display: flex; gap: 10px;">
-                            <button onclick="showTab('assigned')" id="tab-assigned" class="btn-outline active-tab">Assigned</button>
-                            <button onclick="showTab('inprogress')" id="tab-inprogress" class="btn-outline">In Progress</button>
-                            <button onclick="showTab('resolved')" id="tab-resolved" class="btn-outline">Resolved</button>
-                        </div>
+                <!-- In Progress Tab -->
+                <section id="inprogress-section" class="admin-section" style="display: none">
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="search-inprogress" placeholder="Filter active tickets..." style="height: 32px; font-size: 12px;" />
                     </div>
+                    <div id="inprogress-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </section>
 
-                    <!-- Assigned Tab -->
-                    <section id="assigned-section" class="admin-section">
-                        <div class="input-group" style="margin-bottom: 20px;">
-                            <input type="text" id="search-assigned" placeholder="Search by Ticket ID, Issue Type, Account Name..." class="auth-input" />
-                        </div>
-                        <div id="assigned-list" class="ticket-list">
-                            <p class="empty-text">No assigned tickets</p>
-                        </div>
-                    </section>
-
-                    <!-- In Progress Tab -->
-                    <section id="inprogress-section" class="admin-section" style="display: none">
-                        <div class="input-group" style="margin-bottom: 20px;">
-                            <input type="text" id="search-inprogress" placeholder="Search by Ticket ID, Issue Type, Account Name..." class="auth-input" />
-                        </div>
-                        <div id="inprogress-list" class="ticket-list">
-                            <p class="empty-text">No in progress tickets</p>
-                        </div>
-                    </section>
-
-                    <!-- Resolved Tab -->
-                    <section id="resolved-section" class="admin-section" style="display: none">
-                        <div class="input-group" style="margin-bottom: 20px;">
-                            <input type="text" id="search-resolved" placeholder="Search by Ticket ID, Issue Type, Account Name..." class="auth-input" />
-                        </div>
-                        <div id="resolved-list" class="ticket-list">
-                            <p class="empty-text">No resolved tickets</p>
-                        </div>
-                    </section>
+                <!-- Resolved Tab -->
+                <section id="resolved-section" class="admin-section" style="display: none">
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="search-resolved" placeholder="Filter history..." style="height: 32px; font-size: 12px;" />
+                    </div>
+                    <div id="resolved-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </section>
             </div>
         </main>
@@ -120,12 +103,12 @@
 
     <!-- Password Reset Modal -->
     <div id="password-reset-modal" class="modal-overlay" style="display: none">
-      <div class="modal-box">
-        <h3>Reset Password</h3>
-        <p style="margin-bottom: 20px;">You are using a temporary password. Please set a new one to continue.</p>
-        <input type="password" id="new-password" class="auth-input" placeholder="New Password" />
-        <input type="password" id="confirm-password" class="auth-input" placeholder="Confirm Password" />
-        <button id="save-new-password" class="btn-primary" style="margin-top: 10px; width: 100%;">Save</button>
+      <div class="modal-content" style="max-width: 320px; text-align: center;">
+        <h2 style="font-size: 16px; margin-bottom: 8px;">Secure Your Account</h2>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">You are using a temporary password. Please update it.</p>
+        <input type="password" id="new-password" placeholder="New Password" style="margin-bottom: 8px;" />
+        <input type="password" id="confirm-password" placeholder="Confirm Password" style="margin-bottom: 16px;" />
+        <button id="save-new-password" class="btn-primary" style="width: 100%;">Complete Setup</button>
       </div>
     </div>
 

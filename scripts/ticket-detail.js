@@ -9,6 +9,11 @@ async function openTicketDetail(ticketId) {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
 
+  if (currentUser.role === 'admin') {
+    alert('Security: Admins can only manage assignments and status from the dashboard. Conversation access is restricted to Agents and Customers.');
+    return;
+  }
+
   try {
     // Fetch ticket, comments, and activity in parallel
     const [ticketRes, commentsRes, activityRes] = await Promise.all([
@@ -94,8 +99,7 @@ function renderTicketDetail(ticket, comments, activity, currentUser) {
       <div class="detail-body">
         <!-- Main Area (Description + Feedback + Conversation) -->
         <div class="detail-main">
-          
-          <!-- Combined Content Wrapper for scrolling -->
+                    <!-- Combined Content Wrapper for scrolling -->
           <div class="detail-scroll-area">
             <!-- Description Part -->
             <div class="ticket-description">
@@ -111,34 +115,39 @@ function renderTicketDetail(ticket, comments, activity, currentUser) {
               </div>
             </div>
 
-            <!-- Feedback Section (Only for Resolved tickets) -->
-            ${renderFeedbackSection(ticket, currentUser)}
-
             <!-- Conversation -->
             <div class="conversation-container" id="conversation-thread">
               ${renderComments(comments, currentUser)}
             </div>
+
+            <!-- Feedback Section (Now below chat, only for Resolved tickets) -->
+            ${renderFeedbackSection(ticket, currentUser)}
           </div>
 
-          <!-- Comment Input Area (Sticky at bottom) -->
-          <div class="comment-input-area">
-            <!-- Hidden file input -->
-            <input type="file" id="detail-file-input" style="display:none" onchange="uploadAttachment('${ticket.id}')">
-            
-            <button class="attachment-btn" title="Attach Files" onclick="document.getElementById('detail-file-input').click()">
-              <i class="fas fa-paperclip"></i>
-            </button>
-            
-            ${(currentUser.role === 'agent' || currentUser.role === 'admin') ? `
-              <button class="ai-draft-btn" id="ai-draft-btn" title="Draft with AI" onclick="draftWithAi('${ticket.id}')">
-                <i class="fas fa-wand-magic-sparkles"></i>
+          <!-- Comment Input Area (Hidden if Resolved) -->
+          ${ticket.status !== 'Resolved' ? `
+            <div class="comment-input-area">
+              <input type="file" id="detail-file-input" style="display:none" onchange="uploadAttachment('${ticket.id}')">
+              
+              <button class="attachment-btn" title="Attach Files" onclick="document.getElementById('detail-file-input').click()">
+                <i class="fas fa-paperclip"></i>
               </button>
-            ` : ''}
-            
-            <textarea id="comment-input" placeholder="Type your message..." rows="1" onkeydown="handleCommentKeydown(event, '${ticket.id}')"></textarea>
-            
-            <button class="comment-send-btn" id="comment-send-btn" onclick="sendComment('${ticket.id}')">Send</button>
-          </div>
+              
+              ${(currentUser.role === 'agent' || currentUser.role === 'admin') ? `
+                <button class="ai-draft-btn" id="ai-draft-btn" title="Draft with AI" onclick="draftWithAi('${ticket.id}')">
+                  <i class="fas fa-wand-magic-sparkles"></i>
+                </button>
+              ` : ''}
+              
+              <textarea id="comment-input" placeholder="Type your message..." rows="1" onkeydown="handleCommentKeydown(event, '${ticket.id}')"></textarea>
+              
+              <button class="comment-send-btn" id="comment-send-btn" onclick="sendComment('${ticket.id}')">Send</button>
+            </div>
+          ` : `
+            <div class="resolved-badge-bar">
+              <i class="fas fa-check-circle"></i> This ticket is resolved. Conversations are closed.
+            </div>
+          `}
         </div>
 
         <!-- Sidebar: Activity Timeline -->

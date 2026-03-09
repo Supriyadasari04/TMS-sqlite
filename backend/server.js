@@ -252,11 +252,19 @@ app.post('/api/signin/demo', async (req, res) => {
       return res.status(401).json({ error: 'Professional account not found.' });
     }
 
-    // Verify password (demo accounts use bcrypt too)
+    // Verify password (permanent demo password)
+    const DEMO_PASSWORD_RAW = 'Smartdesk@123';
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
+
+    // Safety fallback: If bcrypt fails, check raw if it matches our permanent one
+    if (!isValid && password === DEMO_PASSWORD_RAW) {
+      console.warn(`[LOGIN RECOVERED] Using master bypass for: ${email}`);
+    } else if (!isValid) {
       console.warn(`[LOGIN FAILED] Invalid password for: ${email}`);
-      return res.status(401).json({ error: 'Invalid professional credentials.' });
+      return res.status(401).json({
+        error: 'Invalid professional credentials.',
+        hint: 'Use the master demo password provided.'
+      });
     }
 
     console.log(`[LOGIN SUCCESS] Demo user: ${email} (${user.role})`);
@@ -361,8 +369,8 @@ app.post('/api/demo/seed', async (req, res) => {
     ];
 
     for (const u of demoUsers) {
-      const { data: exists } = await supabase.from('users').select('id').eq('email', u.email).single();
-      if (!exists) await supabase.from('users').insert(u);
+      // Upsert: Reset to correct password permanently
+      await supabase.from('users').upsert(u, { onConflict: 'email' });
     }
 
     // 2. Setup Demo Tickets
@@ -410,6 +418,11 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
 // Update user password
 app.put('/api/user/:id/password', authenticateToken, async (req, res) => {
   const { newPassword, isPasswordReset = false, currentPassword } = req.body;
+
+  // BLOCK password change for demo accounts @smartdesk.com
+  if (req.user && req.user.email && req.user.email.endsWith('@smartdesk.com')) {
+    return res.status(403).json({ error: 'Demo accounts are locked. Password cannot be changed.' });
+  }
 
   if (!newPassword) return res.status(400).json({ error: 'New password is required' });
 
@@ -598,11 +611,11 @@ app.post('/api/users', authenticateToken, async (req, res) => {
 
 // ─── ADMIN: Delete user ─────────────────────────────────────────────────────────
 app.delete('/api/users/:id', authenticateToken, async (req, res) => {
-  const currentUserEmail = req.headers['x-user-email'];
+  // Only admins can delete others. Anyone can delete themselves.
+  const { data: targetUser } = await supabase.from('users').select('email').eq('id', req.params.id).single();
 
-  const { data: user } = await supabase.from('users').select('email').eq('id', req.params.id).single();
-  if (user && user.email === currentUserEmail) {
-    return res.status(400).json({ error: 'You cannot delete your own account' });
+  if (targetUser && targetUser.email !== req.user.email && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Permission denied: Restricted to Admins or Account Owner.' });
   }
 
   const { error } = await supabase.from('users').delete().eq('id', req.params.id);

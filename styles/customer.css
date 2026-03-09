@@ -1,244 +1,109 @@
-/* ===== Base Styles ===== */
+/* ═══════════════════════════════════════════════
+   Apple Minimal Pastel — Customer CSS
+   ═══════════════════════════════════════════════ */
 
-body {
-  margin: 0;
-  width: 100%;
-  min-height: 100vh;
+.customer-section {
+  padding: 24px;
+  animation: modalIn 0.2s ease-out;
 }
 
-/* ===== Global Font Reset ===== */
-button,
-input,
-select,
-textarea {
-  font-family: inherit;
-  font-size: 14px;
+.welcome-header {
+  margin-bottom: 24px;
 }
 
-/* ===== Navigation ===== */
-.customer-navbar {
-  background: var(--bg-surface);
-  box-shadow: var(--shadow);
-  padding: 20px 40px;
+.welcome-header h1 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.welcome-header p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* 📊 COMPACT STATS */
+.stats-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  gap: 16px;
+  margin-bottom: 32px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
-/* ===== Stats Section ===== */
-.customer-stats {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  padding: 40px 20px;
-  flex-wrap: wrap;
-}
-
-/* Stats Card */
-.stat-card {
+.stat-card-small {
   background: var(--bg-card);
-  box-shadow: var(--shadow);
-  border-radius: var(--radius);
   border: 1px solid var(--border);
-  padding: 20px;
-  text-align: center;
-  width: 180px;
-  flex: 1 1 200px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  min-width: 140px;
+  flex: 1;
 }
 
-/* ===== Ticket Section ===== */
-.ticket-section {
-  width: 100%;
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
+.stat-card-small .label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+  display: block;
 }
 
-.ticket-header {
+.stat-card-small .value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 🎫 TICKET LIST */
+.ticket-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 }
 
-/* Buttons are imported from base.css */
-
-/* ===== Ticket List ===== */
-.ticket-list {
-  margin-top: 20px;
+.ticket-grid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
-.ticket-card {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  padding: 16px;
-}
-
-/* ===== Empty Text ===== */
-.empty-text {
-  text-align: center;
-  color: var(--text-light);
-  margin-top: 20px;
-}
-
-/* ===== Modal Styling ===== */
-.modal {
-  display: none;
+/* Custom modal for ticket creation */
+.modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+  display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 2000;
 }
 
 .modal-content {
   background: var(--bg-card);
-  padding: 24px;
-  border-radius: var(--radius);
-  max-width: 700px;
   width: 90%;
+  max-width: 500px;
+  border-radius: 12px;
+  padding: 24px;
   box-shadow: var(--shadow);
-}
-
-/* ===== Input Groups ===== */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.input-group select,
-.input-group textarea,
-.input-group input {
-  padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-family: inherit;
-  background-color: var(--bg-surface);
-  color: var(--text-dark);
-  width: 100%;
-  box-sizing: border-box;
-  transition: all 150ms var(--anim-curve);
+  animation: modalIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.input-group input:focus,
-.input-group select:focus,
-.input-group textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
+.modal-header {
+  margin-bottom: 20px;
 }
 
-/* ===== Modal Actions ===== */
-.modal-actions {
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modal-footer {
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
-
-/* ===== Navigation Link ===== */
-#nav-right-link {
-  text-decoration: none;
-  color: var(--text-dark);
-  font-weight: 500;
-}
-
-/* ===== Ticket Table ===== */
-.ticket-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--bg-card);
-  box-shadow: var(--shadow);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.ticket-table th,
-.ticket-table td {
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
-  text-align: left;
-  font-size: 14px;
-  height: 40px;
-}
-
-.ticket-table th {
-  background: var(--bg-surface);
-  color: var(--text-dark);
-  font-weight: 600;
-}
-
-.ticket-table tr {
-  transition: background-color 150ms var(--anim-curve);
-}
-
-.ticket-table tr:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* ===== Highlight Text ===== */
-mark {
-  background-color: #ffeb3b;
-  color: black;
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-/* ===== Input Grid ===== */
-.input-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-/* ===== Modal Overlay ===== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal-box {
-  background: var(--bg-card);
-  padding: 24px;
-  border-radius: var(--radius-sm);
-  width: 320px;
-  box-shadow: var(--shadow);
-  text-align: center;
-  border: 1px solid var(--border);
-}
-
-.auth-input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg-surface);
-  color: var(--text-dark);
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 25px;
-}
-
-/* Notification Bell and Panel removed - using email notifications only */

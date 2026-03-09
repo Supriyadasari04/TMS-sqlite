@@ -3,77 +3,74 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SmartDesk - Streamline Your Support Workflow</title>
-
+  <title>SmartDesk — Minimal Support Workspace</title>
   <link rel="stylesheet" href="../styles/base.css">
   <link rel="stylesheet" href="../styles/landing.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
 <body>
   <nav class="navbar">
-    <div class="nav-left">
-      <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo" class="logo">
-      <h2>SmartDesk</h2>
+    <div class="nav-left" style="display: flex; align-items: center; gap: 8px;">
+      <img src="https://img.icons8.com/ios-filled/50/AFCBFF/ticket.png" alt="Logo" style="width: 24px; height: 24px;">
+      <h2 class="logo-text">SmartDesk</h2>
     </div>
     <div class="nav-right">
-      <a href="/html/signin.html" class="signin">Sign In</a> 
-      <a href="/html/signup.html" class="signin">Get Started</a>
+      <a href="/html/signin.html">Sign In</a> 
+      <button class="btn-primary" onclick="window.location.href='/html/signup.html'">Get Started</button>
     </div>
   </nav>
   
   <section class="hero">
-    <span class="badge">Professional Support System</span>
+    <span class="badge">Professional Workspace</span>
     <h1>Streamline Your <span>Support Workflow</span></h1>
     <p>
-      Professional ticket management system designed for teams. Create, assign, and resolve 
-      customer support tickets efficiently.
+      An elegant, minimal ticket management system designed for focus and professional support delivery.
     </p>
 
     <div class="stats">
-      <div>
-        <h3>10K+</h3>
-        <p>Tickets Resolved</p>
+      <div class="stat-item">
+        <h3>15k+</h3>
+        <p>RESOLVED</p>
       </div>
-      <div>
+      <div class="stat-item">
         <h3>&lt; 1hr</h3>
-        <p>Response Time</p>
+        <p>AVG RESPONSE</p>
       </div>
-      <div>
+      <div class="stat-item">
         <h3>99%</h3>
-        <p>Satisfaction</p>
+        <p>SATISFACTION</p>
       </div>
     </div>
   </section>
 
-  <!-- New section added above the footer -->
   <section class="features">
-    <h2>Everything You Need</h2>
-    <p>Built for modern support teams with all the features you need to deliver exceptional customer service.</p>
+    <h2>Built for Focus</h2>
     <div class="feature-cards">
       <div class="feature-card">
-      
-        <h3>Smart Ticket Management</h3>
-        <p>Create, assign, and track support tickets with ease</p>
+        <i class="fas fa-ticket-alt" style="color: var(--primary); margin-bottom: 12px; font-size: 18px;"></i>
+        <h3>Smart Tickets</h3>
+        <p>Refined ticket management with clear status tracking and assignment.</p>
       </div>
       <div class="feature-card">
-       
-        <h3>Role-Based Access</h3>
-        <p>Separate dashboards for customers, agents, and administrators</p>
+        <i class="fas fa-user-shield" style="color: var(--primary); margin-bottom: 12px; font-size: 18px;"></i>
+        <h3>Secure Roles</h3>
+        <p>Dedicated workspaces for customers, support agents, and admins.</p>
       </div>
       <div class="feature-card">
-      
-        <h3>Real-Time Updates</h3>
-        <p>Live status updates and notifications across all sessions</p>
+        <i class="fas fa-bolt" style="color: var(--primary); margin-bottom: 12px; font-size: 18px;"></i>
+        <h3>Fast Workflow</h3>
+        <p>Real-time updates and compact interface for rapid ticket resolution.</p>
       </div>
       <div class="feature-card">
-        
-        <h3>Secure & Reliable</h3>
-        <p>Enterprise-grade security with local data management</p>
+        <i class="fas fa-chart-pie" style="color: var(--primary); margin-bottom: 12px; font-size: 18px;"></i>
+        <h3>Clear Metrics</h3>
+        <p>Detailed analytics designed for professional team management.</p>
       </div>
     </div>
   </section>
 
   <footer>
-    <p>© 2025 SmartDesk. All rights reserved.</p>
+    <p>© 2026 SmartDesk Enterprise. Designed for clarity.</p>
   </footer>
 </body>
 </html>

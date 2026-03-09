@@ -108,19 +108,28 @@ async function renderAssigned() {
     }
 
     container.innerHTML = assignedTickets.map(ticket => `
-      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
-        <h4>${ticket.title}</h4>
-        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
-        <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
-        <p><strong>Status:</strong> ${ticket.status}</p>
-        <div style="display:flex; gap:10px;" onclick="event.stopPropagation()">
-          <label><strong>Update Status:</strong></label>
-          <select onchange="updateStatus('${ticket.id}', this.value)" class="auth-input" style="height:30px; margin:0; width:120px; font-size:12px;">
-            <option value="Pending" ${ticket.status === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-            <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
-          </select>
+      <div class="data-card clickable" onclick="openTicketDetail('${ticket.id}')" style="padding: 12px; border-radius: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; background:var(--bg-surface); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:12px;">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">#${ticket.id}</span>
+          </div>
+          <span class="status-pill ${ticket.status.toLowerCase().replace(' ', '-')}">${ticket.status}</span>
+        </div>
+        <h4 style="font-size:14px; font-weight:600; margin-bottom:10px; color:var(--text-primary);">${ticket.title}</h4>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; gap:16px; margin-bottom:12px;">
+          <span><i class="far fa-user" style="margin-right:4px;"></i>${ticket.accountHolder}</span>
+          <span><i class="far fa-clock" style="margin-right:4px;"></i>${formatTime(ticket.createdAt)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding-top:10px; border-top:1px solid var(--divider);" onclick="event.stopPropagation()">
+           <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">STATUS</span>
+           <select onchange="updateStatus('${ticket.id}', this.value)" style="flex:1; height:28px; font-size:12px; padding:0 8px; border-radius:6px; border:1px solid var(--border);">
+              <option value="Pending" ${ticket.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+              <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+           </select>
         </div>
       </div>
     `).join('');
@@ -144,12 +153,29 @@ async function renderInProgress() {
     }
 
     container.innerHTML = inProgressTickets.map(ticket => `
-      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
-        <h4>${ticket.title}</h4>
-        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
-        <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
-        <p><strong>Status:</strong> ${ticket.status}</p>
+      <div class="data-card clickable" onclick="openTicketDetail('${ticket.id}')" style="padding: 12px; border-radius: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; background:var(--bg-surface); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:12px;">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">#${ticket.id}</span>
+          </div>
+          <span class="status-pill in-progress">${ticket.status}</span>
+        </div>
+        <h4 style="font-size:14px; font-weight:600; margin-bottom:10px; color:var(--text-primary);">${ticket.title}</h4>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; gap:16px; margin-bottom:12px;">
+          <span><i class="far fa-user" style="margin-right:4px;"></i>${ticket.accountHolder}</span>
+          <span><i class="far fa-clock" style="margin-right:4px;"></i>${formatTime(ticket.createdAt)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding-top:10px; border-top:1px solid var(--divider);" onclick="event.stopPropagation()">
+           <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">STATUS</span>
+           <select onchange="updateStatus('${ticket.id}', this.value)" style="flex:1; height:28px; font-size:12px; padding:0 8px; border-radius:6px; border:1px solid var(--border);">
+              <option value="Pending">Pending</option>
+              <option value="In Progress" selected>In Progress</option>
+              <option value="Resolved">Resolved</option>
+           </select>
+        </div>
       </div>
     `).join('');
   } catch (error) {
@@ -172,12 +198,21 @@ async function renderResolved() {
     }
 
     container.innerHTML = resolvedTickets.map(ticket => `
-      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
-        <h4>${ticket.title}</h4>
-        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
-        <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Account Holder:</strong> ${ticket.accountHolder}</p>
-        <p><strong>Status:</strong> ${ticket.status}</p>
+      <div class="data-card clickable" onclick="openTicketDetail('${ticket.id}')" style="padding: 12px; border-radius: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; background:var(--bg-surface); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:12px;">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">#${ticket.id}</span>
+          </div>
+          <span class="status-pill resolved">${ticket.status}</span>
+        </div>
+        <h4 style="font-size:14px; font-weight:600; margin-bottom:10px; color:var(--text-primary);">${ticket.title}</h4>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; gap:16px; margin-bottom:12px;">
+          <span><i class="far fa-user" style="margin-right:4px;"></i>${ticket.accountHolder}</span>
+          <span><i class="far fa-clock" style="margin-right:4px;"></i>${formatTime(ticket.createdAt)}</span>
+        </div>
       </div>
     `).join('');
   } catch (error) {

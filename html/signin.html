@@ -12,26 +12,29 @@
 </head>
 <body>
   <div class="auth-container">
-    <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo" class="logo" style="width: 48px; height: 48px;">
+    <img src="https://img.icons8.com/ios-filled/50/0071E3/ticket.png" alt="Logo" class="logo" style="width: 56px; height: 56px; margin-bottom: 8px;">
     <h1>Welcome Back</h1>
-    <p>Sign in to your SmartDesk account</p>
+    <p>Sign in to SmartDesk Enterprise</p>
 
-    <div>
-      <h2 style="margin-bottom: 16px;">Sign In</h2>
-      <p style="color: var(--text-light); margin-bottom: 24px;">Enter your credentials to access your dashboard</p>
-      
-      <input id="signin-email" type="email" class="auth-input" placeholder="Enter your email" />
-      
-      <div class="password-wrapper">
-        <input id="signin-password" type="password" class="auth-input" placeholder="Enter your password" />
-        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signin-password', this)"></i>
-      </div>
-
-      <div style="text-align: right; margin-top: -10px; margin-bottom: 16px;">
-        <a href="#" style="font-size: 14px; color: var(--primary); text-decoration: none; font-weight: 500;" onclick="handleForgotPassword(event)">Forgot Password?</a>
+    <div style="text-align: left;">
+      <div class="input-group" style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 500; color: #86868B; margin-bottom: 8px; display: block; margin-left: 4px;">Email Address</label>
+        <input id="signin-email" type="email" class="auth-input" placeholder="name@company.com" />
       </div>
       
-      <button class="btn-primary" style="width: 100%;" onclick="handleSignIn()">Sign In</button>
+      <div class="input-group" style="margin-bottom: 16px;">
+        <label style="font-size: 13px; font-weight: 500; color: #86868B; margin-bottom: 8px; display: block; margin-left: 4px;">Password</label>
+        <div class="password-wrapper">
+          <input id="signin-password" type="password" class="auth-input" placeholder="••••••••" />
+          <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signin-password', this)"></i>
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: -8px; margin-bottom: 24px;">
+        <a href="#" style="font-size: 14px; color: var(--primary); text-decoration: none; font-weight: 600;" onclick="handleForgotPassword(event)">Forgot Password?</a>
+      </div>
+      
+      <button class="btn-primary" onclick="handleSignIn()">Sign In</button>
     </div>
 
     <div class="auth-footer">

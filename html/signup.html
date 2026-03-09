@@ -13,36 +13,46 @@
 </head>
 <body>
   <div class="auth-container">
-    <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo" class="logo" style="width: 48px; height: 48px;">
+    <img src="https://img.icons8.com/ios-filled/50/0071E3/ticket.png" alt="Logo" class="logo" style="width: 56px; height: 56px; margin-bottom: 8px;">
     <h1>Create Account</h1>
-    <p>Join SmartDesk and get started today</p>
+    <p>Join SmartDesk Enterprise today</p>
 
-    <div>
-      <h2 style="margin-bottom: 16px;">Sign Up</h2>
-      <p style="color: var(--text-light); margin-bottom: 24px;">Create your SmartDesk account</p>
-
-      <input id="signup-email" type="email" class="auth-input" placeholder="Enter your email" />
-      <input id="signup-username" type="text" class="auth-input" placeholder="Enter a username" />
-
-      <div class="password-wrapper">
-        <input id="signup-password" type="password" class="auth-input" placeholder="Enter password" />
-        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-password', this)"></i>
+    <div class="input-grid">
+      <div class="input-group">
+        <label>Username</label>
+        <input id="signup-username" type="text" class="auth-input" placeholder="e.g. jdoe" />
       </div>
-      
-      <div class="password-wrapper">
-        <input id="signup-confirm-password" type="password" class="auth-input" placeholder="Confirm your password" />
-        <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-confirm-password', this)"></i>
+      <div class="input-group">
+        <label>Email Address</label>
+        <input id="signup-email" type="email" class="auth-input" placeholder="e.g. name@company.com" />
       </div>
-      
-      <select id="signup-role" class="auth-input">
-        <option value="" disabled selected>Select your role</option>
-        <option value="admin">Admin</option>
-        <option value="agent">Agent</option>
-        <option value="customer">Customer</option>
-      </select>
-
-      <button class="btn-primary" style="width: 100%;" onclick="handleSignUp()">Create Account</button>
+      <div class="input-group">
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input id="signup-password" type="password" class="auth-input" placeholder="••••••••" />
+          <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-password', this)"></i>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Confirm Password</label>
+        <div class="password-wrapper">
+          <input id="signup-confirm-password" type="password" class="auth-input" placeholder="••••••••" />
+          <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('signup-confirm-password', this)"></i>
+        </div>
+      </div>
     </div>
+    
+    <div class="input-group">
+      <label>Workspace Role</label>
+      <select id="signup-role" class="auth-input">
+        <option value="" disabled selected>Choose your department...</option>
+        <option value="admin">Administration</option>
+        <option value="agent">Support Agent</option>
+        <option value="customer">Client/Customer</option>
+      </select>
+    </div>
+
+    <button class="btn-primary" onclick="handleSignUp()">Create Workspace</button>
 
     <div class="auth-footer">
       <p>Already have an account? <a href="./signin.html">Sign in</a></p>

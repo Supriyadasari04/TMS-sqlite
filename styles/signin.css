@@ -1,77 +1,104 @@
+/* ═══════════════════════════════════════════════
+   Apple Minimal Pastel — Auth CSS
+   ═══════════════════════════════════════════════ */
+
+body {
+  background-color: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
 .auth-container {
-  max-width: 400px;
-  margin: 170px auto;
+  width: 90%;
+  max-width: 380px;
+  /* More compact */
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  padding: 30px;
-  border-radius: var(--radius);
+  padding: 32px;
+  border-radius: 12px;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   text-align: center;
+  animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .auth-container h1 {
-  font-size: 28px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
+  color: var(--text-primary);
 }
 
 .auth-container p {
+  color: var(--text-secondary);
+  font-size: 13.5px;
   margin-bottom: 24px;
 }
 
 .auth-input {
   width: 100%;
-  height: 36px;
+  height: 38px;
   padding: 0 12px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background-color: var(--bg-surface);
-  color: var(--text-dark);
-  transition: all 150ms var(--anim-curve);
+  margin-bottom: 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  background-color: #FFFFFF;
+  color: var(--text-primary);
+  transition: all var(--anim-default);
 }
 
 .auth-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .password-wrapper {
   position: relative;
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .password-wrapper .auth-input {
-  padding-right: 40px;
+  margin-bottom: 0;
 }
 
 .toggle-password {
   position: absolute;
-  top: 10px;
+  top: 11px;
   right: 12px;
   cursor: pointer;
-  color: var(--text-light);
+  color: var(--text-disabled);
+  font-size: 15px;
 }
 
-.toggle-password:hover {
-  color: var(--primary);
+.btn-primary {
+  width: 100%;
+  height: 38px;
+  margin-top: 8px;
 }
 
 .auth-footer {
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
-.auth-footer a,
-.back-link {
-  color: var(--primary);
+.auth-footer a {
+  color: var(--text-primary);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .back-link {
   display: block;
-  margin-top: 24px;
-  font-size: 14px;
-  color: var(--text-light);
+  margin-top: 16px;
+  color: var(--text-disabled);
+  text-decoration: none;
+  font-size: 12px;
 }

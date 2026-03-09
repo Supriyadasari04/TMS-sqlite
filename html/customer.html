@@ -3,88 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Customer Portal - SmartDesk</title>
-
+    <title>Customer Workspace — SmartDesk</title>
     <link rel="stylesheet" href="../styles/base.css" />
     <link rel="stylesheet" href="../styles/customer.css" />
     <link rel="stylesheet" href="../styles/ticket-detail.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+      /* Keep minimal AI styles for now, but refine them */
       .ai-suggest-btn {
-        background: linear-gradient(135deg, #6366f1, #a855f7);
-        color: white;
-        border: none;
-        padding: 6px 14px;
-        border-radius: 8px;
-        font-size: 13px;
+        background: var(--primary);
+        color: var(--text-primary);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 6px;
-        transition: all 0.2s;
-        box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.4);
+        gap: 4px;
+        border: none;
       }
-      .ai-suggest-btn:hover { background: linear-gradient(135deg, #4f46e5, #9333ea); transform: translateY(-1px); }
       .ai-feedback { 
         display: none; 
-        background: rgba(46, 204, 113, 0.1); 
-        border: 1px solid var(--primary); 
-        padding: 12px; 
-        border-radius: 10px; 
-        margin-top: 15px; 
-        font-size: 13px; 
-        color: var(--text-dark);
-        line-height: 1.5;
+        background: var(--bg-surface); 
+        border: 1px solid var(--border); 
+        padding: 10px; 
+        border-radius: 8px; 
+        margin-top: 12px; 
+        font-size: 12px; 
+        color: var(--text-secondary);
       }
-      .ai-feedback strong { color: var(--primary); }
       .ai-tag {
         display: inline-block;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        padding: 2px 8px;
-        border-radius: 6px;
+        background: var(--primary);
+        padding: 1px 6px;
+        border-radius: 4px;
         margin-right: 4px;
         font-weight: 600;
-        color: var(--primary);
-      }
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .modal-content {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        width: 100%;
-        max-width: 600px;
-        position: relative;
-        max-height: 90vh;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .modal-body {
-        padding: 24px;
-        overflow-y: auto;
-      }
-      .modal-actions {
-        padding: 16px 24px;
-        background: var(--bg-surface);
-        border-top: 1px solid var(--border);
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
+        font-size: 10px;
       }
     </style>
   </head>
@@ -92,18 +49,14 @@
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo">
-                <h2>SmartDesk</h2>
+            <div class="sidebar-header" style="display: flex; align-items: center; gap: 8px; padding-bottom: 16px;">
+                <img src="https://img.icons8.com/ios-filled/50/AFCBFF/ticket.png" alt="Logo" style="width: 20px; height: 20px;">
+                <h2 class="logo-text" style="font-size: 16px;">SmartDesk</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="customer.html" class="nav-item active">
                     <i class="fas fa-th-large"></i>
-                    <span>My Dashboard</span>
-                </a>
-                <a href="profile.html" class="nav-item">
-                    <i class="fas fa-user-circle"></i>
-                    <span>Profile</span>
+                    <span>Dashboard</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -111,52 +64,46 @@
                     <div class="side-avatar" id="side-avatar">C</div>
                     <div class="user-meta">
                         <span class="name" id="customer-name-side">Customer</span>
-                        <span class="role-label">Customer</span>
+                        <span class="role-label">Support Account</span>
                     </div>
                 </div>
-                <a href="#" class="nav-item" onclick="logout(); return false;" style="margin-top: 10px; color: var(--error);">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
-            <header style="padding: 24px 32px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
+            <header style="padding: 16px 24px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                   <h1>Customer Dashboard</h1>
-                   <p>Welcome back, <span id="customer-name" style="color: var(--primary); font-weight: 600;">Customer</span></p>
+                   <h1 style="font-size: 18px;">Customer Portal</h1>
+                   <p style="font-size: 12px; color: var(--text-secondary);">Logged in as <span id="customer-name" style="font-weight: 600;">Customer</span></p>
                 </div>
-                <button id="open-modal-btn" class="btn-primary">+ Create New Ticket</button>
+                <button id="open-modal-btn" class="btn-primary" style="height: 32px; font-size: 12px;">+ Open Ticket</button>
             </header>
 
-            <div style="padding: 32px;">
-                <section class="customer-stats">
-                    <div class="stat-card">
-                        <h3 id="total-tickets">0</h3>
-                        <p>Total Tickets</p>
+            <div style="padding: 24px;">
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px;">
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase;">Total</span>
+                        <h3 id="total-tickets" style="font-size: 18px; margin-top: 4px;">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="pending-tickets">0</h3>
-                        <p>Pending</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase;">Pending</span>
+                        <h3 id="pending-tickets" style="font-size: 18px; margin-top: 4px;">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="inprogress-tickets">0</h3>
-                        <p>In Progress</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase;">In Progress</span>
+                        <h3 id="inprogress-tickets" style="font-size: 18px; margin-top: 4px; color: var(--info);">0</h3>
                     </div>
-                    <div class="stat-card">
-                        <h3 id="resolved-tickets">0</h3>
-                        <p>Resolved</p>
+                    <div class="data-card">
+                        <span style="font-size: 10px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase;">Resolved</span>
+                        <h3 id="resolved-tickets" style="font-size: 18px; margin-top: 4px; color: var(--success);">0</h3>
                     </div>
-                </section>
+                </div>
 
-                <section class="ticket-section" style="margin-top: 32px;">
-                    <div class="ticket-header">
-                        <h3>My Support Tickets</h3>
-                    </div>
-                    <div id="tickets-container" class="ticket-list">
-                        <p class="empty-text">No tickets yet. Click "Create New Ticket" to get started.</p>
+                <section class="ticket-section">
+                    <h2 style="font-size: 15px; margin-bottom: 16px;">My Support Request History</h2>
+                    <div id="tickets-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <p class="empty-text" style="font-size: 13px;">No tickets yet.</p>
                     </div>
                 </section>
             </div>
@@ -164,84 +111,70 @@
     </div>
 
     <!-- Modal -->
-    <div id="ticket-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-body">
-          <h3>Create New Ticket</h3>
-          <p style="margin-bottom: 24px;">Provide details about your issue so we can assist you quickly.</p>
+    <div id="ticket-modal" class="modal-overlay" style="display: none">
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h2 style="font-size: 17px;">Request Support</h2>
+          <p style="font-size: 12px; color: var(--text-secondary);">Fill out the details for your support request.</p>
+        </div>
 
-          <div class="input-grid">
-            <div class="input-group">
-              <label>Account Holder Name <span style="color: var(--error)">*</span></label>
-              <input type="text" id="account-holder" placeholder="Enter your full name" class="auth-input" />
-            </div>
-            <div class="input-group">
-              <label>Bank Account Number <span style="color: var(--error)">*</span></label>
-              <input type="text" id="account-number" placeholder="Enter your account number" class="auth-input" />
-            </div>
-
-            <div class="input-group">
-              <label>IFSC Code <span style="color: var(--error)">*</span></label>
-              <input type="text" id="ifsc-code" placeholder="Enter your IFSC code" class="auth-input" />
-            </div>
-
-            <div class="input-group">
-              <label>Issue Type <span style="color: var(--error)">*</span></label>
-              <select id="ticket-subject" class="auth-input">
-                <option value="">Select issue type</option>
-                <option>Login Issue</option>
-                <option>Password Reset</option>
-                <option>Account Access</option>
-                <option>Fund Transfer Issue</option>
-                <option>Card Block / Lost Card</option>
-                <option>Unauthorized Transaction</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label>Impact Level <span style="color: var(--error)">*</span></label>
-              <select id="impact" class="auth-input">
-                <option value="">Select Impact</option>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 11px; font-weight: 500; display: block; margin-bottom: 4px;">Full Legal Name</label>
+            <input type="text" id="account-holder" placeholder="Name" />
           </div>
-
-          <div class="input-group" style="margin-top: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="margin-bottom: 0;">Description <span style="color: var(--error)">*</span></label>
-              <button id="ai-analyze-btn" class="ai-suggest-btn">
-                <i class="fas fa-magic"></i> AI Analyze
-              </button>
-            </div>
-            <textarea id="ticket-description" placeholder="Provide detailed information about your issue" class="auth-input" style="height: 100px; padding: 10px;"></textarea>
-            <div id="ai-feedback" class="ai-feedback">
-              <i class="fas fa-robot"></i> <strong>AI Analysis:</strong> <span id="ai-reason"></span><br/>
-              <div style="margin-top: 5px;" id="ai-tags-container"></div>
-            </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 500; display: block; margin-bottom: 4px;">Account ID</label>
+            <input type="text" id="account-number" placeholder="ID" />
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 500; display: block; margin-bottom: 4px;">Branch / IFSC</label>
+            <input type="text" id="ifsc-code" placeholder="Branch" />
+          </div>
+          <div>
+            <label style="font-size: 11px; font-weight: 500; display: block; margin-bottom: 4px;">Urgency</label>
+            <select id="impact">
+              <option value="Low">Standard</option>
+              <option value="Medium">Urgent</option>
+              <option value="High">Critical</option>
+            </select>
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button id="cancel-ticket" class="btn-outline">Cancel</button>
-          <button id="save-ticket" class="btn-primary">Create Ticket</button>
+        <div style="margin-top: 10px;">
+          <label style="font-size: 11px; font-weight: 500; display: block; margin-bottom: 4px;">Issue Type</label>
+          <select id="ticket-subject">
+            <option>Login Issue</option>
+            <option>Account Access</option>
+            <option>Transaction Issue</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 11px; font-weight: 500;">Brief Description</label>
+            <button id="ai-analyze-btn" class="ai-suggest-btn">AI Assist</button>
+          </div>
+          <textarea id="ticket-description" placeholder="Describe your issue..." style="height: 80px;"></textarea>
+          <div id="ai-feedback" class="ai-feedback"></div>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 24px;">
+          <button id="cancel-ticket" class="btn-outline">Dismiss</button>
+          <button id="save-ticket" class="btn-primary">Submit Request</button>
         </div>
       </div>
     </div>
 
     <!-- Password Reset Modal -->
     <div id="password-reset-modal" class="modal-overlay" style="display: none">
-      <div class="modal-box">
-        <h3>Reset Your Password</h3>
-        <p>You are using a temporary password. Please set a new one to continue.</p>
-        <input type="password" id="new-password" placeholder="Enter new password" class="auth-input" />
-        <input type="password" id="confirm-password" placeholder="Confirm new password" class="auth-input" />
-        <div style="margin-top: 12px; display: flex; gap: 10px">
-          <button id="save-new-password" class="btn-primary" style="flex: 1">Save Password</button>
-        </div>
+      <div class="modal-content" style="max-width: 320px; text-align: center;">
+        <h2 style="font-size: 16px;">Complete Setup</h2>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">Please set your permanent password.</p>
+        <input type="password" id="new-password" placeholder="New Password" style="margin-bottom: 8px;" />
+        <input type="password" id="confirm-password" placeholder="Confirm Password" style="margin-bottom: 16px;" />
+        <button id="save-new-password" class="btn-primary" style="width: 100%;">Complete Setup</button>
       </div>
     </div>
 

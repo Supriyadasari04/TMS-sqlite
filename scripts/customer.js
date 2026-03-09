@@ -156,13 +156,21 @@ async function renderTickets() {
     }
 
     container.innerHTML = userTickets.map(ticket => `
-      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
-        <h4>${ticket.title}</h4>
-        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
-        <p><strong>Impact Level:</strong> ${ticket.impact}</p>
-        <p><strong>Status:</strong> ${ticket.status}</p>
-        <p><strong>Assigned To:</strong> ${ticket.assignedTo ? ticket.assignedTo : '<span style="color:gray">Not assigned yet</span>'
-      }</p>
+      <div class="data-card clickable" onclick="openTicketDetail('${ticket.id}')" style="padding: 12px; border-radius: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; background:var(--bg-surface); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:12px;">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">#${ticket.id}</span>
+          </div>
+          <span class="status-pill ${ticket.status.toLowerCase().replace(' ', '-')}">${ticket.status}</span>
+        </div>
+        <h4 style="font-size:14px; font-weight:600; margin-bottom:10px; color:var(--text-primary);">${ticket.title}</h4>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; gap:16px; margin-bottom:12px;">
+          <span><i class="far fa-user" style="margin-right:4px;"></i>${ticket.accountHolder}</span>
+          <span><i class="far fa-clock" style="margin-right:4px;"></i>${formatTime(ticket.createdAt)}</span>
+        </div>
       </div>`).join('');
   } catch (error) {
     console.error('Error fetching tickets:', error);

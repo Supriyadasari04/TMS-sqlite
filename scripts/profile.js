@@ -48,6 +48,39 @@ window.onload = async function () {
     }
 };
 
+
+
+async function deleteAccount() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+
+    const confirmMessage = `⚠️ CRITICAL: deleting your account will permanently remove all your tickets and history.\n\nType DELETE to confirm:`;
+    const input = prompt(confirmMessage);
+
+    if (input !== 'DELETE') {
+        alert('Deletion cancelled.');
+        return;
+    }
+
+    try {
+        const response = await authFetch(`/api/users/${currentUser.id}`, {
+            method: 'DELETE',
+            headers: { 'x-user-email': currentUser.email /* Required by server constraint */ }
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Your account and all associated data have been permanently deleted.');
+            logout();
+        } else {
+            throw new Error(data.error || 'Failed to delete account');
+        }
+    } catch (error) {
+        console.error('Account Deletion Error:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
 function redirectToDashboard(role) {
     if (role === 'admin') window.location.href = 'admin.html';
     else if (role === 'agent') window.location.href = 'agent.html';

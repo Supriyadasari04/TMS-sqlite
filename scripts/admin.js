@@ -129,17 +129,17 @@ function updateCsatChart(tickets) {
       datasets: [{
         label: 'Ratings',
         data: ratings,
-        backgroundColor: ['#ef4444', '#f59e0b', '#fbbf24', '#a3e635', '#10b981']
+        backgroundColor: ['#FFB7B2', '#FFD6BA', '#FFF4BA', '#CAF0C1', '#B7E4C7'] // Pastel Red to Green
       }]
     },
     options: {
-      indexAxis: 'y', // Horizontal bars
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { beginAtZero: true, ticks: { stepSize: 1 } },
-        y: { grid: { display: false } }
+        x: { beginAtZero: true, ticks: { stepSize: 1, color: '#6E6E73' }, grid: { color: 'rgba(0,0,0,0.03)' } },
+        y: { grid: { display: false }, ticks: { color: '#6E6E73' } }
       }
     }
   });
@@ -147,8 +147,6 @@ function updateCsatChart(tickets) {
 
 function updateVolumeChart(tickets) {
   const ctx = document.getElementById('volumeChart').getContext('2d');
-
-  // Calculate counts for last 7 days
   const labels = [];
   const counts = [];
   const now = new Date();
@@ -156,46 +154,34 @@ function updateVolumeChart(tickets) {
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(now.getDate() - i);
-    const dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
     labels.push(dateStr);
-
-    // Count tickets created on this day
-    const count = tickets.filter(t => {
-      const tDate = new Date(t.createdAt);
-      return tDate.toDateString() === d.toDateString();
-    }).length;
+    const count = tickets.filter(t => new Date(t.createdAt).toDateString() === d.toDateString()).length;
     counts.push(count);
   }
 
   if (volumeChartInstance) volumeChartInstance.destroy();
-
   volumeChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Tickets Opened',
+        label: 'Tickets',
         data: counts,
-        borderColor: '#2ECC71',
-        backgroundColor: 'rgba(46, 204, 113, 0.1)',
+        borderColor: '#AFCBFF',
+        backgroundColor: 'rgba(175, 203, 255, 0.1)',
         fill: true,
-        tension: 0.4,
-        pointRadius: 4
+        tension: 0.6,
+        pointRadius: 0
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1, color: '#9CA3AF' },
-          grid: { color: '#2A2F36' }
-        },
-        x: {
-          ticks: { color: '#9CA3AF' },
-          grid: { display: false }
-        }
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6E6E73' }, grid: { color: 'rgba(0,0,0,0.03)' } },
+        x: { ticks: { color: '#6E6E73' }, grid: { display: false } }
       }
     }
   });
@@ -203,9 +189,7 @@ function updateVolumeChart(tickets) {
 
 function updateSlaChart(stats) {
   const ctx = document.getElementById('slaChart').getContext('2d');
-
   if (slaChartInstance) slaChartInstance.destroy();
-
   const onTime = (stats.total || 0) - (stats.breached || 0);
 
   slaChartInstance = new Chart(ctx, {
@@ -214,25 +198,17 @@ function updateSlaChart(stats) {
       labels: ['On Track', 'Breached'],
       datasets: [{
         data: [onTime, stats.breached || 0],
-        backgroundColor: ['#22C55E', '#EF4444'],
-        borderWidth: 0,
-        hoverOffset: 4
+        backgroundColor: ['#B7E4C7', '#FFB7B2'],
+        borderWidth: 0
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            usePointStyle: true,
-            padding: 20,
-            color: '#9CA3AF'
-          }
-        }
+        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 }, color: '#6E6E73' } }
       },
-      cutout: '70%'
+      cutout: '75%'
     }
   });
 }
@@ -245,11 +221,10 @@ async function renderTickets() {
     const agentsResponse = await authFetch('/api/users');
     const users = await agentsResponse.json();
     const agents = users.filter(u => u.role === 'agent');
-
     const container = document.getElementById('tickets-list');
 
     if (!tickets.length) {
-      container.innerHTML = `<p class="empty-text">No tickets found</p>`;
+      container.innerHTML = `<p class="empty-text">No workspace tickets found.</p>`;
       return;
     }
 
@@ -260,21 +235,30 @@ async function renderTickets() {
         .join('');
 
       return `
-      <div class="ticket-card clickable" onclick="openTicketDetail('${ticket.id}')">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <h4>Issue: ${ticket.title}</h4>
-          <button class="btn-delete" onclick="event.stopPropagation(); deleteTicket('${ticket.id}')">Delete</button>
+      <div class="data-card clickable" onclick="openTicketDetail('${ticket.id}')" style="padding: 12px; border-radius: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="width:24px; height:24px; background:var(--bg-surface); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:12px;">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">#${ticket.id}</span>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span class="status-pill ${ticket.status.toLowerCase().replace(' ', '-')}">${ticket.status}</span>
+            <button class="btn-delete" style="height:22px; padding:0 8px; font-size:10px; background:none; border:1px solid rgba(255,59,48,0.1);" onclick="event.stopPropagation(); deleteTicket('${ticket.id}')">Delete</button>
+          </div>
         </div>
-        <p><strong>Ticket ID:</strong> #${ticket.id}</p>
-        <p><strong>Impact Level:</strong> ${ticket.impact || 'N/A'}</p>
-        <p><strong>Account Holder:</strong> ${ticket.accountHolder || 'N/A'}</p>
-        <p><strong>Status:</strong> ${ticket.status}</p>
-        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
-          <p style="margin:0;"><strong>Assigned To:</strong></p>
-          <select onchange="assignAgent('${ticket.id}', this.value)">
-            <option value="">Not assigned</option>
-            ${agentOptions}
-          </select>
+        <h4 style="font-size:14px; font-weight:600; margin-bottom:10px; color:var(--text-primary);">${ticket.title}</h4>
+        <div style="font-size:12px; color:var(--text-secondary); display:flex; gap:16px; margin-bottom:12px;">
+          <span><i class="far fa-user" style="margin-right:4px;"></i>${ticket.accountHolder}</span>
+          <span><i class="far fa-clock" style="margin-right:4px;"></i>${formatTime(ticket.createdAt)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding-top:10px; border-top:1px solid var(--divider);" onclick="event.stopPropagation()">
+           <span style="font-size:11px; font-weight:600; color:var(--text-disabled);">AGENT</span>
+           <select onchange="assignAgent('${ticket.id}', this.value)" style="flex:1; height:28px; font-size:12px; padding:0 8px; border-radius:6px; border:1px solid var(--border);">
+              <option value="">Unassigned</option>
+              ${agentOptions}
+           </select>
         </div>
       </div>`;
     }).join('');

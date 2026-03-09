@@ -1,80 +1,31 @@
+/* ═══════════════════════════════════════════════
+   Apple Minimal Pastel — Signup Grid Style
+   ═══════════════════════════════════════════════ */
+@import url('./signin.css');
+
 .auth-container {
-  max-width: 400px;
-  margin: 100px auto;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  padding: 30px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  text-align: center;
+  max-width: 460px;
+  /* Still compact, but fits 2 cols */
 }
 
-.auth-container h1 {
-  font-size: 28px;
-  margin-bottom: 8px;
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  text-align: left;
 }
 
-.auth-container p {
-  margin-bottom: 24px;
-}
-
-.auth-input {
-  width: 100%;
-  height: 36px;
-  padding: 0 12px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  background-color: var(--bg-surface);
-  color: var(--text-dark);
-  transition: all 150ms var(--anim-curve);
-}
-
-.auth-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
-}
-
-.password-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.password-wrapper .auth-input {
-  padding-right: 40px;
-}
-
-.toggle-password {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  cursor: pointer;
-  color: var(--text-light);
-}
-
-.toggle-password:hover {
-  color: var(--primary);
-}
-
-select.auth-input {
-  background-color: var(--bg-surface);
-}
-
-.auth-footer {
-  margin-top: 20px;
-}
-
-.auth-footer a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.back-link {
+.input-group label {
   display: block;
-  margin-top: 24px;
-  font-size: 14px;
-  color: var(--text-light);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  margin-left: 2px;
+}
+
+@media (max-width: 480px) {
+  .input-grid {
+    grid-template-columns: 1fr;
+  }
 }

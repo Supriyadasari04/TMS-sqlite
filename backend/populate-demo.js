@@ -1,7 +1,6 @@
 /**
  * populate-demo.js
- * Run this script locally to populate Supabase with demo data.
- * Usage: node backend/populate-demo.js
+ * Comprehensive Demo Reset Script
  */
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
@@ -12,222 +11,91 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_KEY
 );
 
-async function populate() {
-    console.log('🚀 Starting demo data population...');
-
-    const demoUsers = [
-        {
-            id: 'admin_demo',
-            email: 'admin@smartdesk.com',
-            username: 'HeadAdmin',
-            password: await bcrypt.hash('password123', 10),
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 'agent_demo',
-            email: 'agent1@smartdesk.com',
-            username: 'Agent_Alpha',
-            password: await bcrypt.hash('password123', 10),
-            role: 'agent',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 'agent_demo2',
-            email: 'agent2@smartdesk.com',
-            username: 'SarahHelp',
-            password: await bcrypt.hash('password123', 10),
-            role: 'agent',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 'agent_demo3',
-            email: 'agent3@smartdesk.com',
-            username: 'MikeTech',
-            password: await bcrypt.hash('password123', 10),
-            role: 'agent',
-            createdAt: new Date().toISOString()
-        },
-        {
-            id: 'demo-cust-1',
-            email: 'customer1@smartdesk.com',
-            username: 'Alex Johnson',
-            password: await bcrypt.hash('password123', 10),
-            role: 'customer',
-            createdAt: new Date(Date.now() - 30 * 24 * 3600000).toISOString()
-        },
-        {
-            id: 'demo-cust-2',
-            email: 'customer2@smartdesk.com',
-            username: 'Sarah Miller',
-            password: await bcrypt.hash('password123', 10),
-            role: 'customer',
-            createdAt: new Date(Date.now() - 15 * 24 * 3600000).toISOString()
-        }
-    ];
-
-    // 1. Clean and Insert Users
-    console.log('Cleaning and inserting demo users...');
-    for (const user of demoUsers) {
-        // First delete to avoid any upsert/conflict issues
-        await supabase.from('users').delete().eq('email', user.email);
-        const { error } = await supabase.from('users').insert(user);
-        if (error) console.error(`Error inserting user ${user.email}:`, error.message);
+async function wipeAndPopulate() {
+    console.log('🗑️ Wiping existing data...');
+    const tables = ['feedback', 'ticket_activity', 'ticket_comments', 'attachments', 'tickets', 'users'];
+    for (const table of tables) {
+        const { error } = await supabase.from(table).delete().neq('id', '0'); // Basic wipe
+        if (error) console.log(`Note: Initial wipe of ${table} had entries or was already empty.`);
     }
 
-    // Define some agents/admins we know exist
-    const agent1 = 'agent_demo';
-    const admin1 = 'admin_demo';
-
-    const demoTickets = [
-        {
-            id: 'TCKT-DEMO-101',
-            title: 'Unauthorized Transaction',
-            description: 'I see a transaction of $500 that I did not authorize on my credit card. Please help!',
-            impact: 'High',
-            accountHolder: 'Alex Johnson',
-            accountNumber: '1234567890',
-            ifscCode: 'SDNK0001234',
-            status: 'In Progress',
-            createdBy: 'customer1@smartdesk.com',
-            createdAt: new Date(Date.now() - 2 * 24 * 3600000).toISOString(),
-            assignedTo: agent1,
-            sentiment: 'frustrated',
-            slaBreached: true
-        },
-        {
-            id: 'TCKT-DEMO-102',
-            title: 'Card Block / Lost Card',
-            description: 'I lost my debit card while traveling. Need to block it immediately.',
-            impact: 'High',
-            accountHolder: 'Alex Johnson',
-            accountNumber: '1234567890',
-            ifscCode: 'SDNK0001234',
-            status: 'Resolved',
-            createdBy: 'customer1@smartdesk.com',
-            createdAt: new Date(Date.now() - 5 * 24 * 3600000).toISOString(),
-            assignedTo: agent1,
-            sentiment: 'neutral',
-            slaBreached: false,
-            resolvedAt: new Date(Date.now() - 4.5 * 24 * 3600000).toISOString()
-        },
-        {
-            id: 'TCKT-DEMO-103',
-            title: 'Login Issue',
-            description: 'Cannot log in to the portal after the last update. Keeps saying wrong password.',
-            impact: 'Medium',
-            accountHolder: 'Sarah Miller',
-            accountNumber: '0987654321',
-            ifscCode: 'SDNK0005678',
-            status: 'Pending',
-            createdBy: 'customer2@smartdesk.com',
-            createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
-            assignedTo: null,
-            sentiment: 'angry',
-            slaBreached: false
-        },
-        {
-            id: 'TCKT-DEMO-104',
-            title: 'Fund Transfer Issue',
-            description: 'Transfer was successful from my side but recipient hasn\'t received it yet.',
-            impact: 'Medium',
-            accountHolder: 'Sarah Miller',
-            accountNumber: '0987654321',
-            ifscCode: 'SDNK0005678',
-            status: 'Resolved',
-            createdBy: 'customer2@smartdesk.com',
-            createdAt: new Date(Date.now() - 10 * 24 * 3600000).toISOString(),
-            assignedTo: admin1,
-            sentiment: 'satisfied',
-            slaBreached: false,
-            resolvedAt: new Date(Date.now() - 9 * 24 * 3600000).toISOString()
-        }
+    console.log('🚀 Creating 15 professional accounts...');
+    const password = await bcrypt.hash('password123', 10);
+    
+    const users = [
+        // 1 Admin
+        { id: 'admin-1', email: 'admin@smartdesk.com', username: 'Head Admin', password, role: 'admin' },
+        // 4 Agents
+        { id: 'agent-1', email: 'agent1@smartdesk.com', username: 'Sarah Thompson', password, role: 'agent' },
+        { id: 'agent-2', email: 'agent2@smartdesk.com', username: 'Michael Chen', password, role: 'agent' },
+        { id: 'agent-3', email: 'agent3@smartdesk.com', username: 'Emily Davis', password, role: 'agent' },
+        { id: 'agent-4', email: 'agent4@smartdesk.com', username: 'Marcus Reed', password, role: 'agent' },
     ];
 
-    // 2. Insert Tickets
-    console.log('Inserting demo tickets...');
-    for (const ticket of demoTickets) {
-        const { error } = await supabase.from('tickets').upsert(ticket);
-        if (error) console.error(`Error inserting ticket ${ticket.id}:`, error.message);
+    // 10 Customers
+    for (let i = 1; i <= 10; i++) {
+        users.push({
+            id: `cust-${i}`,
+            email: `customer${i}@smartdesk.com`,
+            username: `Customer ${i}`,
+            password,
+            role: 'customer'
+        });
     }
 
-    // 3. Insert Comments
-    console.log('Inserting demo comments...');
+    const { error: userErr } = await supabase.from('users').insert(users);
+    if (userErr) console.error('User Insert Error:', userErr);
+
+    console.log('🎫 Generating diverse ticket history...');
+    const now = new Date();
+    
+    // Create 15 tickets with different states
+    const tickets = [];
+    const statuses = ['Pending', 'In Progress', 'Resolved', 'Resolved', 'In Progress', 'Pending'];
+    const impacts = ['High', 'Medium', 'Low'];
+
+    for (let i = 1; i <= 15; i++) {
+        const status = statuses[i % statuses.length];
+        const impact = impacts[i % impacts.length];
+        const creator = users[5 + (i % 10)].email;
+        const agent = (i % 2 === 0) ? users[1 + (i % 4)].username : null;
+        
+        tickets.push({
+            id: `TCKT-2026-${100 + i}`,
+            title: `Enterprise Issue #${i}: ${['Login problem', 'Data Export', 'Account Lockdown', 'Billing Query'][i % 4]}`,
+            description: `This is a high-priority demonstration ticket for ${status} state testing.`,
+            impact: impact,
+            accountHolder: `Demo User ${i}`,
+            accountNumber: `60007000${i}`,
+            ifscCode: 'SDNK0001234',
+            status: status,
+            createdBy: creator,
+            assignedTo: agent,
+            createdAt: new Date(now.getTime() - i * 24 * 3600000).toISOString(),
+            slaBreached: i % 5 === 0,
+            resolvedAt: status === 'Resolved' ? now.toISOString() : null
+        });
+    }
+
+    const { error: ticketErr } = await supabase.from('tickets').insert(tickets);
+    if (ticketErr) console.error('Ticket Insert Error:', ticketErr);
+
+    console.log('💬 Adding chat history and feedback...');
+    // Add comments to some tickets
     const comments = [
-        {
-            ticketId: 'TCKT-DEMO-101',
-            userId: 'demo-cust-1',
-            userRole: 'customer',
-            userName: 'Alex Johnson',
-            message: 'Hello, any updates on this?',
-            createdAt: new Date(Date.now() - 1.5 * 24 * 3600000).toISOString()
-        },
-        {
-            ticketId: 'TCKT-DEMO-101',
-            userId: 'agent-id', // Placeholder
-            userRole: 'agent',
-            userName: 'agent_demo',
-            message: 'We are investigating with the fraud department. Please wait.',
-            createdAt: new Date(Date.now() - 1 * 24 * 3600000).toISOString()
-        },
-        {
-            ticketId: 'TCKT-DEMO-104',
-            userId: 'admin-id',
-            userRole: 'admin',
-            userName: 'admin_demo',
-            message: 'The transaction has been cleared now.',
-            createdAt: new Date(Date.now() - 9.1 * 24 * 3600000).toISOString()
-        }
+        { ticketId: 'TCKT-2026-104', userId: 'agent-1', userRole: 'agent', userName: 'Sarah Thompson', message: 'I have started looking into your account lockdown issue.', createdAt: new Date(now.getTime() - 12 * 3600000).toISOString() },
+        { ticketId: 'TCKT-2026-104', userId: 'cust-1', userRole: 'customer', userName: 'Customer 1', message: 'Thank you, I need this resolved for my meeting today.', createdAt: new Date(now.getTime() - 11 * 3600000).toISOString() }
     ];
     await supabase.from('ticket_comments').insert(comments);
 
-    // 4. Insert Feedback
-    console.log('Inserting demo feedback...');
+    // Add feedback for resolved tickets
     const feedbacks = [
-        {
-            ticketId: 'TCKT-DEMO-102',
-            customerEmail: 'customer1@smartdesk.com',
-            customerName: 'Alex Johnson',
-            rating: 5,
-            comment: 'Very fast response. Thanks!',
-            createdAt: new Date(Date.now() - 4 * 24 * 3600000).toISOString()
-        },
-        {
-            ticketId: 'TCKT-DEMO-104',
-            customerEmail: 'customer2@smartdesk.com',
-            customerName: 'Sarah Miller',
-            rating: 2,
-            comment: 'Took too long to resolve my issue.',
-            createdAt: new Date(Date.now() - 8 * 24 * 3600000).toISOString()
-        }
+        { ticketId: 'TCKT-2026-103', customerEmail: 'customer8@smartdesk.com', customerName: 'Customer 8', rating: 5, comment: 'Excellent and fast service!', createdAt: now.toISOString() },
+        { ticketId: 'TCKT-2026-109', customerEmail: 'customer4@smartdesk.com', customerName: 'Customer 4', rating: 2, comment: 'Took too long to respond.', createdAt: now.toISOString() }
     ];
     await supabase.from('feedback').insert(feedbacks);
 
-    // 5. Insert Activity logs
-    console.log('Inserting demo activity...');
-    const activities = [
-        {
-            ticketId: 'TCKT-DEMO-101',
-            action: 'ticket_created',
-            performedBy: 'Alex Johnson',
-            performedByRole: 'customer',
-            details: 'Ticket opened via portal',
-            createdAt: new Date(Date.now() - 2 * 24 * 3600000).toISOString()
-        },
-        {
-            ticketId: 'TCKT-DEMO-101',
-            action: 'status_changed',
-            performedBy: 'agent_demo',
-            performedByRole: 'agent',
-            oldValue: 'Pending',
-            newValue: 'In Progress',
-            details: 'Agent picked up the ticket',
-            createdAt: new Date(Date.now() - 1.8 * 24 * 3600000).toISOString()
-        }
-    ];
-    await supabase.from('ticket_activity').insert(activities);
-
-    console.log('✅ Demo data population complete!');
+    console.log('✅ DATABASE RESET & DEMO DATA COMPLETE!');
 }
 
-populate();
+wipeAndPopulate();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - SmartDesk</title>
+    <title>Account Profile — SmartDesk</title>
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,18 +12,14 @@
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo">
-                <h2>SmartDesk</h2>
+            <div class="sidebar-header" style="display: flex; align-items: center; gap: 8px; padding-bottom: 20px;">
+                <img src="https://img.icons8.com/ios-filled/50/AFCBFF/ticket.png" alt="Logo" style="width: 22px; height: 22px;">
+                <h2 class="logo-text" style="font-size: 17px;">SmartDesk</h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="#" id="dash-link" class="nav-item">
                     <i class="fas fa-th-large"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="profile.html" class="nav-item active">
-                    <i class="fas fa-user-circle"></i>
-                    <span>Profile</span>
+                    <span>Return Workspace</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -31,58 +27,58 @@
                     <div class="side-avatar" id="side-avatar">U</div>
                     <div class="user-meta">
                         <span class="name" id="admin-name-side">User</span>
-                        <span class="role-label" id="side-role-label">User Profile</span>
+                        <span class="role-label">Account settings</span>
                     </div>
                 </div>
-                <a href="#" class="nav-item" onclick="logout(); return false;" style="margin-top: 10px; color: var(--error);">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <div class="profile-container">
-                <header style="margin-bottom: 40px;">
-                    <h1 id="page-title">User Profile</h1>
-                    <p>Verified account information for <span id="display-username" style="color: var(--primary); font-weight: 600;">User</span></p>
+                <header style="margin-bottom: 32px;">
+                    <h1 style="font-size: 20px;">My Workspace Profile</h1>
+                    <p style="font-size: 12.5px; color: var(--text-secondary);">Managed by <span id="display-username" style="font-weight: 600;">User</span></p>
                 </header>
 
                 <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="profile-avatar-large" id="profile-avatar">U</div>
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid var(--divider); padding-bottom: 24px;">
+                        <div id="side-avatar" style="width: 48px; height: 48px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600;">U</div>
                         <div>
-                            <h2 id="prof-username" style="font-size: 24px; margin-bottom: 4px;">Username</h2>
-                            <p id="prof-role" style="text-transform: uppercase; color: var(--primary); font-weight: 600; font-size: 11px; letter-spacing: 1px;">ROLE</p>
+                            <h2 id="prof-username" style="font-size: 18px; font-weight: 600;">Username</h2>
+                            <p id="prof-role" style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.05em; margin-top: 2px;">ROLE</p>
                         </div>
                     </div>
 
-                    <div class="profile-details-grid">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                         <div class="detail-item">
-                            <label>Email Address</label>
-                            <div class="value" id="prof-email">loading...</div>
+                            <label>Professional Email</label>
+                            <div class="value" id="prof-email">...</div>
                         </div>
                         <div class="detail-item">
-                            <label>Account ID</label>
-                            <div class="value" id="prof-id" style="font-family: monospace;">loading...</div>
+                            <label>Unique Identifier</label>
+                            <div class="value" id="prof-id" style="font-family: monospace; font-size: 12px;">...</div>
                         </div>
                         <div class="detail-item">
-                            <label>Member Since</label>
-                            <div class="value" id="prof-joined">loading...</div>
+                            <label>Activation Date</label>
+                            <div class="value" id="prof-joined">...</div>
                         </div>
                         <div class="detail-item">
-                            <label>Account Status</label>
-                            <div class="value"><span class="badge" style="background: rgba(46, 204, 113, 0.2); color: #2ECC71;">Active</span></div>
+                            <label>Membership Status</label>
+                            <div class="value"><span class="status-pill resolved">ACTIVE</span></div>
                         </div>
                     </div>
 
-                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--divider);">
-                        <h3>Security & Access</h3>
-                        <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 14px;">To update your password or security settings, please use the password reset flow from the login page.</p>
-                        <button class="btn-outline" onclick="logout()" style="color: var(--error); border-color: var(--error);">
-                            Sign Out represented
-                        </button>
+                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--divider);">
+                        <h3 style="font-size: 14px; margin-bottom: 8px;">Workspace Security</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 12.5px; line-height: 1.5;">To update your credentials or secondary access controls, please contact your workspace administrator.</p>
+                        
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <button class="btn-outline" onclick="logout()" style="height: 32px; font-size: 12px;">Sign Out</button>
+                            <button class="btn-danger" onclick="deleteAccount()" style="height: 32px; font-size: 11px; font-weight: 600;">
+                                Terminate Account
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
