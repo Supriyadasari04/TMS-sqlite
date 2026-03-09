@@ -47,6 +47,14 @@ async function handleSignIn(event) {
 
     // 2. Set standard session info (backward compatibility)
     setToken(token);
+
+    // 2b. Force sync with database to ensure public profile exists
+    try {
+      await syncUserProfile(username, userRole);
+    } catch (syncErr) {
+      console.warn('Sync failed, using local fallback:', syncErr);
+    }
+
     setCurrentUser({
       ...user,
       role: userRole,
@@ -54,13 +62,6 @@ async function handleSignIn(event) {
     });
 
     // 3. Redirect based on role
-    if (userRole === 'admin') {
-      window.location.href = 'admin.html';
-    } else if (userRole === 'agent') {
-      window.location.href = 'agent.html';
-    } else {
-      window.location.href = 'customer.html';
-    }
     if (userRole === 'admin') {
       window.location.href = 'admin.html';
     } else if (userRole === 'agent') {

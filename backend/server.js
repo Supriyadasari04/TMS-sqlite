@@ -13,9 +13,9 @@ const nodemailer = require('nodemailer');
 
 // ─── Email Config (Feature 14) ────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for 465, false for 587
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT) || 465,
+  secure: (process.env.SMTP_PORT == '465'), // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
@@ -83,16 +83,8 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
-    // 1. Try Supabase Auth first
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (!error && user) {
-      req.user = user;
-      return next();
-    }
-
-    // 2. Fallback to Demo JWT if Supabase fails
-    const DEMO_SECRET = process.env.JWT_SECRET || 'smartdesk_demo_secret_2024';
+    // 1. Try Demo JWT first (Local & Fast)
+    const DEMO_SECRET = process.env.JWT_SECRET || 'ticketpro_jwt_secret_key_change_before_deploying_2026';
     try {
       const decoded = jwt.verify(token, DEMO_SECRET);
       if (decoded && decoded.is_demo) {
@@ -103,18 +95,34 @@ async function authenticateToken(req, res, next) {
           role: decoded.role,
           is_demo: true
         };
-        console.log(`[AUTH] Allowed demo access for: ${req.user.email}`);
         return next();
       }
     } catch (jwtErr) {
-      console.log(`[AUTH] Failed Demo JWT check:`, jwtErr.message);
+      // Not a demo token, proceed to Supabase check
     }
 
-    console.log(`[AUTH] All auth checks failed for token!`);
-    return res.status(403).json({ error: 'Invalid or expired token. Please sign in again.' });
+    // 2. Try Supabase Auth (Network Call)
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) {
+        req.user = user;
+        // Map Supabase metadata to standard role/username
+        req.user.role = user.user_metadata?.role || 'customer';
+        req.user.username = user.user_metadata?.username || user.email.split('@')[0];
+        return next();
+      }
+    } catch (supaErr) {
+      console.error('[AUTH] Supabase connection error:', supaErr.message);
+      // If it's a network reset, don't crash the server
+      if (supaErr.code === 'ECONNRESET' || supaErr.code === 'UND_ERR_CONNECT_TIMEOUT') {
+        return res.status(503).json({ error: 'Database connection timeout. Please try again.' });
+      }
+    }
+
+    return res.status(403).json({ error: 'Invalid or expired session. Please sign in again.' });
   } catch (err) {
-    console.error('Auth middleware error:', err);
-    res.status(500).json({ error: 'Authentication error' });
+    console.error('[AUTH CRITICAL]:', err);
+    res.status(500).json({ error: 'Internal authentication error' });
   }
 }
 
@@ -135,7 +143,7 @@ async function logActivity(ticketId, action, performedBy, performedByRole, oldVa
       createdAt: new Date().toISOString()
     });
   } catch (err) {
-    console.error('Failed to log activity:', err);
+    console.error(`[DB ERROR] logActivity failed for ticket ${ticketId}:`, err);
   }
 }
 
@@ -184,15 +192,17 @@ async function checkSlaBreach() {
     const ids = breaches.map(b => b.id);
     await supabase.from('tickets').update({ slaBreached: true }).in('id', ids);
 
-    // Notify Admin/Agent
+    // SLA breached logic remains, but in-app notifications are removed.
     for (const b of breaches) {
-      const timestamp = new Date().toLocaleString();
-      const notifs = [{ message: `🚨 TICKET BREACHED: #${b.id} has exceeded its SLA deadline.`, role: 'admin', email: null, timestamp, read: false }];
+      // Notify assigned agent via Email
       if (b.assignedTo) {
         const { data: agnt } = await supabase.from('users').select('email').eq('username', b.assignedTo).single();
-        if (agnt) notifs.push({ message: `⚠️ SLA BREACH: Ticket #${b.id} assigned to you has breached.`, role: 'agent', email: agnt.email, timestamp, read: false });
+        if (agnt) {
+          sendTicketEmail(agnt.email, 'SLA BREACH ALERT', `Your assigned ticket #${b.id} has breached SLA.`, `This is a critical alert for ticket <b>#${b.id}</b>. Please resolve it immediately.`, b.id);
+        }
       }
-      await supabase.from('notifications').insert(notifs);
+      // Notify admin
+      sendTicketEmail(process.env.SMTP_USER, 'Global SLA Breach', `Ticket #${b.id} has breached SLA.`, `Urgent attention required for ticket <b>#${b.id}</b>.`, b.id);
     }
   }
 }
@@ -210,7 +220,7 @@ async function enrichTicketsWithNames(tickets) {
   return tickets.map(t => ({
     ...t,
     createdByName: userMap[t.createdBy] || t.createdBy,
-    assignedToName: userMap[t.assignedTo] || t.assignedTo
+    assignedToName: userMap[t.assignedTo] || t.assignedTo || 'Unassigned'
   }));
 }
 
@@ -228,18 +238,28 @@ app.post('/api/signin/demo', async (req, res) => {
       return res.status(401).json({ error: 'Only professional @smartdesk.com accounts can use demo login.' });
     }
 
-    // Check users table directly
+    console.log(`[LOGIN ATTEMPT] Demo login for: ${email} (Password length: ${password.length})`);
+
+    // Check users table directly (Case-Insensitive)
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .ilike('email', email)
       .single();
 
-    if (error || !user) return res.status(401).json({ error: 'Professional account not found.' });
+    if (error || !user) {
+      console.warn(`[LOGIN FAILED] User not found: ${email}`);
+      return res.status(401).json({ error: 'Professional account not found.' });
+    }
 
     // Verify password (demo accounts use bcrypt too)
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) return res.status(401).json({ error: 'Invalid professional credentials.' });
+    if (!isValid) {
+      console.warn(`[LOGIN FAILED] Invalid password for: ${email}`);
+      return res.status(401).json({ error: 'Invalid professional credentials.' });
+    }
+
+    console.log(`[LOGIN SUCCESS] Demo user: ${email} (${user.role})`);
 
     // Issue a custom JWT that the backend recognizes
     // We'll use a specific 'demo' claim to distinguish from Supabase JWTs
@@ -251,7 +271,7 @@ app.post('/api/signin/demo', async (req, res) => {
         username: user.username,
         is_demo: true
       },
-      process.env.JWT_SECRET || 'smartdesk_demo_secret_2024',
+      process.env.JWT_SECRET || 'ticketpro_jwt_secret_key_change_before_deploying_2026',
       { expiresIn: '24h' }
     );
 
@@ -304,10 +324,11 @@ app.post('/api/user/sync', authenticateToken, async (req, res) => {
     const profileData = {
       id: user_id,
       email: user_email,
-      username,
+      username: username,
       role: finalRole,
       createdAt: user.created_at || new Date().toISOString(),
-      needsPasswordReset: false
+      needsPasswordReset: false,
+      password: 'SYNCED_PROVIDER' // Provide dummy password if NOT NULL constraint exists
     };
 
     if (existing) {
@@ -320,8 +341,8 @@ app.post('/api/user/sync', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Profile synced successfully', user: profileData });
   } catch (error) {
-    console.error('Profile sync error:', error);
-    res.status(500).json({ error: 'Failed to sync professional profile' });
+    console.error('[SYNC ERROR]:', error.message || error);
+    res.status(500).json({ error: 'Failed to sync professional profile', details: error.message });
   }
 });
 
@@ -497,35 +518,28 @@ app.put('/api/tickets/:id/assign', authenticateToken, async (req, res) => {
     })
     .eq('id', ticketId);
 
-  if (error) return res.status(500).json({ error: 'Failed to assign ticket' });
+  if (error) {
+    console.error('[ASSIGN ERROR]:', error);
+    return res.status(500).json({ error: 'Failed to assign ticket' });
+  }
 
   // Log activity
   await logActivity(ticketId, 'agent_assigned', req.user.username || req.user.email, 'admin', oldAgent, agentUsername || 'Unassigned', `Ticket assigned to ${agentUsername || 'nobody'}`);
   if (oldStatus !== newStatus) {
     await logActivity(ticketId, 'status_changed', req.user.username || req.user.email, 'admin', oldStatus, newStatus, `Status changed from ${oldStatus} to ${newStatus}`);
   }
-
-  // Fetch ticket for notifications
+  // Send Email Notification to Customer & Agent
   const { data: ticket } = await supabase.from('tickets').select('*').eq('id', ticketId).single();
   if (ticket) {
-    const timestamp = new Date().toLocaleString();
-
-    const notifs = [];
-
     if (ticket.createdBy) {
-      notifs.push({ message: `Your ticket #${ticketId} has been assigned to agent ${agentUsername}.`, role: 'customer', email: ticket.createdBy, timestamp, read: false });
+      sendTicketEmail(ticket.createdBy, 'Ticket Assigned', `Your ticket #${ticketId} has been assigned.`, `Agent <b>${agentUsername}</b> is now working on your ticket.`, ticketId);
     }
-
     if (agentUsername) {
       const { data: agent } = await supabase.from('users').select('email').eq('username', agentUsername).single();
       if (agent) {
-        notifs.push({ message: `You have been assigned to ticket #${ticketId} (${ticket.title}).`, role: 'agent', email: agent.email, timestamp, read: false });
+        sendTicketEmail(agent.email, 'New Ticket Assigned', `You have been assigned to ticket #${ticketId}.`, `Please review <b>#${ticketId}</b>: ${ticket.title}`, ticketId);
       }
     }
-
-    notifs.push({ message: `Ticket #${ticketId} assigned to agent ${agentUsername}. Please monitor progress.`, role: 'admin', email: null, timestamp, read: false });
-
-    await supabase.from('notifications').insert(notifs);
   }
 
   res.json({ message: 'Ticket assigned successfully' });
@@ -596,45 +610,8 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   res.json({ message: 'User deleted successfully' });
 });
 
-// ─── NOTIFICATIONS: Get ────────────────────────────────────────────────────────
-app.get('/api/notifications', authenticateToken, async (req, res) => {
-  const { email, role } = req.query;
+// Notification endpoints removed
 
-  const { data: notifications, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('read', false)
-    .or(`email.eq.${email},role.eq.${role}`)
-    .order('timestamp', { ascending: false });
-
-  if (error) return res.status(500).json({ error: 'Database error' });
-  res.json(notifications);
-});
-
-// ─── NOTIFICATIONS: Mark one as read ───────────────────────────────────────────
-app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', req.params.id);
-
-  if (error) return res.status(500).json({ error: 'Failed to mark notification as read' });
-  res.json({ message: 'Notification marked as read' });
-});
-
-// ─── NOTIFICATIONS: Mark all as read ───────────────────────────────────────────
-app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
-  const { email, role } = req.body;
-
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('read', false)
-    .or(`email.eq.${email},role.eq.${role}`);
-
-  if (error) return res.status(500).json({ error: 'Failed to mark notifications as read' });
-  res.json({ message: 'All notifications marked as read' });
-});
 
 // ─── AGENT: Stats ──────────────────────────────────────────────────────────────
 app.get('/api/agent/stats', authenticateToken, async (req, res) => {
@@ -694,33 +671,32 @@ app.put('/api/tickets/:id/status', authenticateToken, async (req, res) => {
     updateData.resolvedAt = new Date().toISOString();
   }
 
-  const { data: updated, error } = await supabase
-    .from('tickets')
-    .update(updateData)
-    .eq('id', ticketId)
-    .eq('assignedTo', agentUsername)
-    .select();
+  // Agents can update status. Admins can TOO. 
+  // If role is admin, we skip the assignedTo check.
+  let query = supabase.from('tickets').update(updateData).eq('id', ticketId);
 
-  if (error) return res.status(500).json({ error: 'Failed to update ticket status' });
+  if (req.user.role !== 'admin') {
+    query = query.eq('assignedTo', agentUsername);
+  }
+
+  const { data: updated, error } = await query.select();
+
+  if (error) {
+    console.error('[UPDATE STATUS ERROR]:', error);
+    return res.status(500).json({ error: 'Failed to update ticket status' });
+  }
   if (!updated || updated.length === 0) {
+    console.warn(`[UPDATE STATUS FAILED] Ticket ${ticketId} not found or mismatch for agent ${agentUsername}`);
     return res.status(404).json({ error: 'Ticket not found or not assigned to you' });
   }
 
   // Log activity
   await logActivity(ticketId, 'status_changed', agentUsername, 'agent', oldStatus, status, `Status changed from ${oldStatus} to ${status}`);
 
-  // Send notifications
+  // Notify Customer via Email
   const { data: ticket } = await supabase.from('tickets').select('*').eq('id', ticketId).single();
-  if (ticket) {
-    const timestamp = new Date().toLocaleString();
-    const notifs = [];
-
-    if (ticket.createdBy) {
-      notifs.push({ message: `Status of your ticket #${ticketId} has been changed to "${status}".`, role: 'customer', email: ticket.createdBy, timestamp, read: false });
-    }
-    notifs.push({ message: `Ticket #${ticketId} status changed to "${status}" by ${agentUsername}.`, role: 'admin', email: null, timestamp, read: false });
-
-    await supabase.from('notifications').insert(notifs);
+  if (ticket && ticket.createdBy) {
+    sendTicketEmail(ticket.createdBy, 'Ticket Status Updated', `Status of #${ticketId} changed to ${status}.`, `Your ticket is now <b>${status}</b>.`, ticketId);
   }
 
   res.json({ message: 'Ticket status updated successfully' });
@@ -935,15 +911,8 @@ async function routeTicketToAgent(ticketId) {
     // 4. Update Ticket
     await supabase.from('tickets').update({ assignedTo: bestAgent, status: 'In Progress' }).eq('id', ticketId);
 
-    // 5. Notify the agent
-    const timestamp = new Date().toLocaleString();
-    await supabase.from('notifications').insert({
-      message: `🔔 New ticket Assigned to you: #${ticketId} (via Intelligent Routing)`,
-      role: 'agent',
-      email: sortedAgents[0].email,
-      timestamp,
-      read: false
-    });
+    // In-app notifications removed
+
 
     // 6. Log activity
     await logActivity(ticketId, 'agent_assigned', 'AI SYSTEM', 'system', null, bestAgent, `Intelligent Routing: Assigned to ${bestAgent} who has the lowest workload.`);
@@ -968,12 +937,12 @@ async function sendTicketEmail(to, subject, title, msg, ticketId) {
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 10px; overflow: hidden;">
-      <div style="background: #0066ff; color: #ffffff; padding: 20px; text-align: center;">
+      <div style="background: #2ECC71; color: #ffffff; padding: 20px; text-align: center;">
         <h2 style="margin: 0;">SmartDesk Update</h2>
       </div>
       <div style="padding: 20px; color: #333333; line-height: 1.6;">
         <p><strong>Ticket ID: #${ticketId}</strong></p>
-        <h3 style="color: #0066ff;">${title}</h3>
+        <h3 style="color: #2ECC71;">${title}</h3>
         <p>${msg}</p>
         <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #777777;">
@@ -1039,11 +1008,8 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Database creation failed: ' + error.message });
   }
 
-  const timestamp = new Date().toLocaleString();
-  await supabase.from('notifications').insert([
-    { message: `New ticket created by ${createdBy}: #${newTicket.id}`, role: 'admin', email: null, timestamp, read: false },
-    { message: `Your ticket #${newTicket.id} has been created successfully. Our team will reach out soon.`, role: 'customer', email: createdBy, timestamp, read: false }
-  ]);
+  // In-app notifications removed
+
 
   // Intelligent Routing: Assign to agent automatically (Feature 11)
   const routedAgent = await routeTicketToAgent(newTicket.id);
@@ -1226,30 +1192,18 @@ app.post('/api/tickets/:id/comments', authenticateToken, async (req, res) => {
     }
   }
 
-  // Send notification to the other party
   const { data: ticketMetadata } = await supabase.from('tickets').select('createdBy, assignedTo, title').eq('id', ticketId).single();
   if (ticketMetadata) {
-    const timestamp = new Date().toLocaleString();
-    const notifs = [];
-
     if (userRole === 'customer') {
-      // Notify assigned agent (if any)
       if (ticketMetadata.assignedTo) {
         const { data: agentUser } = await supabase.from('users').select('email').eq('username', ticketMetadata.assignedTo).single();
         if (agentUser) {
-          notifs.push({ message: `New reply on #${ticketId}: ${userName}`, role: 'agent', email: agentUser.email, timestamp, read: false });
           sendTicketEmail(agentUser.email, 'New Reply Received', `The customer has replied to ticket #${ticketId}.`, `<b>${userName}:</b> ${message.trim()}`, ticketId);
         }
       }
-      // Also notify admins
-      notifs.push({ message: `Customer replied to #${ticketId}`, role: 'admin', email: null, timestamp, read: false });
     } else {
-      // Notify customer
-      notifs.push({ message: `New reply from Support on #${ticketId}`, role: 'customer', email: ticketMetadata.createdBy, timestamp, read: false });
       sendTicketEmail(ticketMetadata.createdBy, 'New Support Reply', `An agent has replied to your ticket #${ticketId}.`, `<b>Support:</b> ${message.trim()}`, ticketId);
     }
-
-    if (notifs.length > 0) await supabase.from('notifications').insert(notifs);
   }
 
   res.json({ message: 'Comment added successfully', comment: data });
@@ -1271,7 +1225,15 @@ app.get('/api/tickets/:id/activity', authenticateToken, async (req, res) => {
   res.json(activity || []);
 });
 
-// ─── Start Server ───────────────────────────────────────────────────────────────
+// ─── Error Handling & Start Server ──────────────────────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err);
+});
+
+// Start Server
 app.listen(PORT, async () => {
   console.log(`\n🚀 SmartDesk server running on http://localhost:${PORT}`);
   console.log(`📦 Database: Supabase Connected.`);

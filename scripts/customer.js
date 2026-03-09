@@ -1,5 +1,5 @@
 /* ============================================
-   Customer Dashboard Script – TicketPro
+   Customer Dashboard Script – SmartDesk
    ============================================ */
 
 // === Global Analysis State ===
@@ -13,14 +13,17 @@ window.onload = async function () {
     return;
   }
 
+  // Sidebar Profile Update
+  document.getElementById('customer-name').innerText = currentUser.username;
+  document.getElementById('customer-name-side').innerText = currentUser.username;
+  document.getElementById('side-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
+
   // Clear AI data on open
   document.getElementById('open-modal-btn').onclick = () => {
     currentAiAnalysis = null;
     document.getElementById('ai-feedback').style.display = 'none';
     document.getElementById('ticket-modal').style.display = 'flex';
   };
-
-  document.getElementById('customer-name').innerText = currentUser.username;
 
   // ✅ FIX 4: Only check needsPasswordReset — no password in localStorage
   if (currentUser.needsPasswordReset) {
@@ -29,7 +32,6 @@ window.onload = async function () {
 
   await renderTickets();
   await updateStats();
-  await updateNotifCount();
 
   const aiBtn = document.getElementById('ai-analyze-btn');
   if (aiBtn) aiBtn.addEventListener('click', handleAiAnalyze);
@@ -126,7 +128,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
       await renderTickets();
       await updateStats();
-      await updateNotifCount();
     } catch (error) {
       console.error('Error creating ticket:', error);
       alert('Error: ' + error.message);
@@ -186,91 +187,6 @@ async function updateStats() {
   }
 }
 
-/* ==============================
-   Notifications
-============================== */
-async function toggleNotifications() {
-  const panel = document.getElementById('notif-panel');
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-  if (panel.style.display === 'block') await renderNotifications();
-}
-
-async function renderNotifications() {
-  const notifList = document.getElementById('notif-list');
-  const currentUser = getCurrentUser();
-
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    let notifications = await response.json();
-
-    const sortValue = document.getElementById('notif-sort').value;
-    if (sortValue === 'latest') {
-      notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    } else if (sortValue === 'earliest') {
-      notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    }
-
-    notifList.innerHTML = notifications.length
-      ? notifications.map(notification => `
-          <div class="notif-item">
-            <div>
-              <small>${notification.timestamp}</small>
-              <p>${notification.message}</p>
-            </div>
-            <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
-          </div>`).join('')
-      : "<p style='text-align:center;'>No new notifications.</p>";
-
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-  }
-}
-
-async function markAsRead(notificationId) {
-  try {
-    await authFetch(`/api/notifications/${notificationId}/read`, { method: 'PUT' });
-    await renderNotifications();
-    await updateNotifCount();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  const clearBtn = document.getElementById('clear-all-notifs');
-  const sortSelect = document.getElementById('notif-sort');
-
-  if (clearBtn) {
-    clearBtn.onclick = async () => {
-      const currentUser = getCurrentUser();
-      try {
-        await authFetch('/api/notifications/read-all', {
-          method: 'PUT',
-          body: JSON.stringify({ email: currentUser.email, role: currentUser.role })
-        });
-        await renderNotifications();
-        await updateNotifCount();
-      } catch (error) {
-        console.error('Error clearing notifications:', error);
-      }
-    };
-  }
-
-  if (sortSelect) sortSelect.addEventListener('change', renderNotifications);
-});
-
-async function updateNotifCount() {
-  const currentUser = getCurrentUser();
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    const notifications = await response.json();
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error updating notification count:', error);
-  }
-}
-
 async function handleAiAnalyze() {
   const titleSelect = document.getElementById('ticket-subject');
   const titleValue = titleSelect ? titleSelect.value : '';
@@ -322,6 +238,6 @@ async function handleAiAnalyze() {
     alert('AI categorization failed: ' + error.message);
   } finally {
     aiBtn.disabled = false;
-    aiBtn.innerHTML = '<i class="fas fa-magic"></i> Analyze with AI';
+    aiBtn.innerHTML = '<i class="fas fa-magic"></i> AI Analyze';
   }
 }

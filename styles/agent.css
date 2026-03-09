@@ -9,9 +9,9 @@
 }
 
 .tab-buttons .active-tab {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
 }
 
 .admin-section {
@@ -39,10 +39,12 @@
 
 .auth-input {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
   margin-top: 8px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-dark);
 }
 
 /* Sidebar navigation is removed, these are now top-level or contained in sections */

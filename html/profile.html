@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - SmartDesk</title>
+    <link rel="stylesheet" href="../styles/base.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="https://img.icons8.com/ios-filled/50/2ECC71/ticket.png" alt="Logo">
+                <h2>SmartDesk</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" id="dash-link" class="nav-item">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="profile.html" class="nav-item active">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile-summary">
+                    <div class="side-avatar" id="side-avatar">U</div>
+                    <div class="user-meta">
+                        <span class="name" id="admin-name-side">User</span>
+                        <span class="role-label" id="side-role-label">User Profile</span>
+                    </div>
+                </div>
+                <a href="#" class="nav-item" onclick="logout(); return false;" style="margin-top: 10px; color: var(--error);">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="profile-container">
+                <header style="margin-bottom: 40px;">
+                    <h1 id="page-title">User Profile</h1>
+                    <p>Verified account information for <span id="display-username" style="color: var(--primary); font-weight: 600;">User</span></p>
+                </header>
+
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar-large" id="profile-avatar">U</div>
+                        <div>
+                            <h2 id="prof-username" style="font-size: 24px; margin-bottom: 4px;">Username</h2>
+                            <p id="prof-role" style="text-transform: uppercase; color: var(--primary); font-weight: 600; font-size: 11px; letter-spacing: 1px;">ROLE</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-details-grid">
+                        <div class="detail-item">
+                            <label>Email Address</label>
+                            <div class="value" id="prof-email">loading...</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Account ID</label>
+                            <div class="value" id="prof-id" style="font-family: monospace;">loading...</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Member Since</label>
+                            <div class="value" id="prof-joined">loading...</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Account Status</label>
+                            <div class="value"><span class="badge" style="background: rgba(46, 204, 113, 0.2); color: #2ECC71;">Active</span></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--divider);">
+                        <h3>Security & Access</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 14px;">To update your password or security settings, please use the password reset flow from the login page.</p>
+                        <button class="btn-outline" onclick="logout()" style="color: var(--error); border-color: var(--error);">
+                            Sign Out represented
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../scripts/api.js"></script>
+    <script src="../scripts/profile.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@
 
 .badge {
   display: inline-block;
-  background: #eef2ff;
+  background: var(--primary-light);
   color: var(--primary);
   font-weight: 600;
   padding: 6px 14px;
@@ -20,6 +20,7 @@
   font-size: 48px;
   line-height: 1.2;
   margin-bottom: 20px;
+  color: var(--text-dark);
 }
 
 .hero h1 span {
@@ -61,8 +62,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 5%;
-  background: var(--white);
+  background: var(--bg-surface);
   box-shadow: var(--shadow);
+  border-bottom: 1px solid var(--divider);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -94,8 +96,8 @@
 footer {
   text-align: center;
   padding: 20px 0;
-  background: var(--white);
-  color: var(--text-light);
+  background: var(--bg-surface);
+  color: var(--text-muted);
   font-size: 14px;
   border-top: 1px solid var(--border);
 }
@@ -103,7 +105,7 @@ footer {
 .features {
   text-align: center;
   padding: 60px 20px;
-  background: #f7faff;
+  background: var(--bg-main);
 }
 
 .features h2 {
@@ -127,10 +129,11 @@ footer {
 }
 
 .feature-card {
-  background: var(--white);
+  background: var(--bg-card);
   padding: 30px;
   border-radius: 10px;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }

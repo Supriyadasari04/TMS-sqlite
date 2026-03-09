@@ -1,13 +1,7 @@
 /* ===== Base Styles ===== */
-:root {
-  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
 
 body {
   margin: 0;
-  font-family: var(--font-family);
-  background: #f5f5f5;
-  color: var(--text-dark);
   width: 100%;
   min-height: 100vh;
 }
@@ -23,7 +17,7 @@ textarea {
 
 /* ===== Navigation ===== */
 .customer-navbar {
-  background: var(--white);
+  background: var(--bg-surface);
   box-shadow: var(--shadow);
   padding: 20px 40px;
   display: flex;
@@ -40,16 +34,16 @@ textarea {
   display: flex;
   justify-content: center;
   gap: 20px;
-  background: var(--bg-light);
   padding: 40px 20px;
   flex-wrap: wrap;
 }
 
 /* Stats Card */
 .stat-card {
-  background: white;
+  background: var(--bg-card);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
+  border: 1px solid var(--border);
   padding: 20px;
   text-align: center;
   width: 180px;
@@ -70,23 +64,7 @@ textarea {
   align-items: center;
 }
 
-/* ===== Buttons ===== */
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.btn-outline {
-  border: 1px solid var(--border);
-  background: white;
-  padding: 10px 18px;
-  border-radius: var(--radius);
-  cursor: pointer;
-}
+/* Buttons are imported from base.css */
 
 /* ===== Ticket List ===== */
 .ticket-list {
@@ -97,9 +75,10 @@ textarea {
 }
 
 .ticket-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   padding: 16px;
 }
 
@@ -121,7 +100,7 @@ textarea {
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-card);
   padding: 24px;
   border-radius: var(--radius);
   max-width: 700px;
@@ -140,22 +119,24 @@ textarea {
 .input-group select,
 .input-group textarea,
 .input-group input {
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-family: inherit;
-  background-color: white;
+  background-color: var(--bg-surface);
+  color: var(--text-dark);
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: all 150ms var(--anim-curve);
 }
 
 .input-group input:focus,
 .input-group select:focus,
 .input-group textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
 }
 
 /* ===== Modal Actions ===== */
@@ -176,7 +157,7 @@ textarea {
 .ticket-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--bg-card);
   box-shadow: var(--shadow);
   border-radius: var(--radius);
   overflow: hidden;
@@ -184,19 +165,25 @@ textarea {
 
 .ticket-table th,
 .ticket-table td {
-  border: 1px solid var(--border);
-  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
   text-align: left;
   font-size: 14px;
+  height: 40px;
 }
 
 .ticket-table th {
-  background: var(--primary);
-  color: white;
+  background: var(--bg-surface);
+  color: var(--text-dark);
+  font-weight: 600;
 }
 
-.ticket-table tr:nth-child(even) {
-  background: #f9fafb;
+.ticket-table tr {
+  transition: background-color 150ms var(--anim-curve);
+}
+
+.ticket-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* ===== Highlight Text ===== */
@@ -229,20 +216,23 @@ mark {
 }
 
 .modal-box {
-  background: white;
+  background: var(--bg-card);
   padding: 24px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   width: 320px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
   text-align: center;
+  border: 1px solid var(--border);
 }
 
 .auth-input {
   width: 100%;
   padding: 8px;
   margin-top: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-dark);
 }
 
 .nav-right {
@@ -251,91 +241,4 @@ mark {
   gap: 25px;
 }
 
-/* Notification Bell Styling */
-.notif-bell {
-  position: relative;
-  cursor: pointer;
-  font-size: 22px;
-  color: var(--text-dark);
-}
-
-.notif-bell:hover {
-  color: var(--primary);
-}
-
-#notif-count {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  background: red;
-  color: white;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: bold;
-  padding: 2px 6px;
-}
-
-
-/* ===== Notification Panel ===== */
-#notif-panel {
-  position: absolute;
-  top: 60px;
-  right: 40px;
-  width: 320px;
-  max-height: 400px;
-  overflow-y: auto;
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 1001;
-  padding: 10px;
-  border-radius: 8px;
-}
-
-.notif-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.notif-header select {
-  padding: 5px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.notif-item {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notif-item small {
-  display: block;
-  color: #888;
-}
-
-.notif-item p {
-  margin: 5px 0 0 0;
-  font-size: 14px;
-}
-
-.mark-read-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: red;
-  font-size: 16px;
-}
-
-#clear-all-notifs {
-  padding: 10px;
-  border-radius: var(--radius);
-  background: var(--border);
-  border: none;
-  cursor: pointer;
-}
+/* Notification Bell and Panel removed - using email notifications only */

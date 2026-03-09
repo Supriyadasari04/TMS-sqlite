@@ -8,7 +8,10 @@ window.onload = async function () {
     return;
   }
 
+  // Sidebar Profile Update
   document.getElementById('agent-name').innerText = currentUser.username;
+  document.getElementById('agent-name-side').innerText = currentUser.username;
+  document.getElementById('side-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
 
   // ✅ FIX 4: Only check needsPasswordReset — no password in localStorage
   if (currentUser.needsPasswordReset) {
@@ -21,7 +24,6 @@ window.onload = async function () {
 
   await renderStats();
   await renderAllTabs();
-  await updateNotifCount();
 };
 
 /* ==============================
@@ -64,7 +66,7 @@ async function showPasswordResetModal() {
 
 /* ==============================
    Stats and Tabs
-============================== */
+============================= */
 async function renderStats() {
   try {
     const currentUser = getCurrentUser();
@@ -114,7 +116,7 @@ async function renderAssigned() {
         <p><strong>Status:</strong> ${ticket.status}</p>
         <div style="display:flex; gap:10px;" onclick="event.stopPropagation()">
           <label><strong>Update Status:</strong></label>
-          <select onchange="updateStatus('${ticket.id}', this.value)">
+          <select onchange="updateStatus('${ticket.id}', this.value)" class="auth-input" style="height:30px; margin:0; width:120px; font-size:12px;">
             <option value="Pending" ${ticket.status === 'Pending' ? 'selected' : ''}>Pending</option>
             <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
             <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
@@ -203,91 +205,9 @@ async function updateStatus(ticketId, newStatus) {
 
     await renderStats();
     await renderAllTabs();
-    await updateNotifCount();
   } catch (error) {
     alert(error.message);
   }
 }
 
-/* ==============================
-   Notifications
-============================== */
-async function toggleNotifications() {
-  const panel = document.getElementById('notif-panel');
-  if (panel.style.display === 'block') {
-    panel.style.display = 'none';
-  } else {
-    await renderNotifications();
-    panel.style.display = 'block';
-  }
-}
-
-async function renderNotifications() {
-  const notifList = document.getElementById('notif-list');
-  const currentUser = getCurrentUser();
-
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    let notifications = await response.json();
-
-    const sortValue = document.getElementById('notif-sort').value;
-    if (sortValue === 'latest') {
-      notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    } else if (sortValue === 'earliest') {
-      notifications.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    }
-
-    notifList.innerHTML = notifications.length
-      ? notifications.map(notification => `
-        <div class="notif-item">
-          <div>
-            <small>${notification.timestamp}</small>
-            <p>${notification.message}</p>
-          </div>
-          <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
-        </div>
-      `).join('')
-      : "<p style='text-align:center;'>No new notifications.</p>";
-
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-  }
-}
-
-async function markAsRead(notificationId) {
-  try {
-    await authFetch(`/api/notifications/${notificationId}/read`, { method: 'PUT' });
-    await renderNotifications();
-    await updateNotifCount();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
-}
-
-async function updateNotifCount() {
-  const currentUser = getCurrentUser();
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    const notifications = await response.json();
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error updating notification count:', error);
-  }
-}
-
-document.getElementById('clear-all-notifs').onclick = async () => {
-  const currentUser = getCurrentUser();
-  try {
-    await authFetch('/api/notifications/read-all', {
-      method: 'PUT',
-      body: JSON.stringify({ email: currentUser.email, role: currentUser.role })
-    });
-    await renderNotifications();
-    await updateNotifCount();
-  } catch (error) {
-    console.error('Error clearing notifications:', error);
-  }
-};
-
-document.getElementById('notif-sort').addEventListener('change', renderNotifications);
+// Notification logic removed - using email notifications only

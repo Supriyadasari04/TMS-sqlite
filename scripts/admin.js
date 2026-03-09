@@ -9,6 +9,8 @@ window.onload = async function () {
   }
 
   document.getElementById('admin-name').innerText = currentUser.username;
+  document.getElementById('admin-name-side').innerText = currentUser.username;
+  document.getElementById('side-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
 
   // ✅ FIX 4: Only check needsPasswordReset flag — no password in localStorage
   if (currentUser.needsPasswordReset) {
@@ -33,7 +35,6 @@ window.onload = async function () {
 
   document.getElementById('save-user-btn').addEventListener('click', saveUser);
 
-  await updateNotifCount();
   await renderStats();
   await renderTickets();
   await renderUsers();
@@ -175,8 +176,8 @@ function updateVolumeChart(tickets) {
       datasets: [{
         label: 'Tickets Opened',
         data: counts,
-        borderColor: '#0066ff',
-        backgroundColor: 'rgba(0, 102, 255, 0.1)',
+        borderColor: '#2ECC71',
+        backgroundColor: 'rgba(46, 204, 113, 0.1)',
         fill: true,
         tension: 0.4,
         pointRadius: 4
@@ -186,8 +187,15 @@ function updateVolumeChart(tickets) {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 } },
-        x: { grid: { display: false } }
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: '#9CA3AF' },
+          grid: { color: '#2A2F36' }
+        },
+        x: {
+          ticks: { color: '#9CA3AF' },
+          grid: { display: false }
+        }
       }
     }
   });
@@ -206,7 +214,7 @@ function updateSlaChart(stats) {
       labels: ['On Track', 'Breached'],
       datasets: [{
         data: [onTime, stats.breached || 0],
-        backgroundColor: ['#10b981', '#ef4444'],
+        backgroundColor: ['#22C55E', '#EF4444'],
         borderWidth: 0,
         hoverOffset: 4
       }]
@@ -215,7 +223,14 @@ function updateSlaChart(stats) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+        legend: {
+          position: 'bottom',
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            color: '#9CA3AF'
+          }
+        }
       },
       cutout: '70%'
     }
@@ -300,7 +315,6 @@ async function assignAgent(ticketId, agentUsername) {
 
     await renderTickets();
     await renderStats();
-    await updateNotifCount();
   } catch (error) {
     alert(error.message);
   }
@@ -431,7 +445,7 @@ function showTab(tab) {
   const allTabs = ['tab-stats', 'tab-tickets', 'tab-performance', 'tab-users'];
   allTabs.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.classList.toggle('active-tab', id === `tab-${tab}`);
+    if (el) el.classList.toggle('active', id === `tab-${tab}`);
   });
 
   // Header Title
@@ -499,7 +513,7 @@ async function renderPerformance() {
     });
 
     list.innerHTML = performanceData.map(data => `
-      <tr style="border-bottom: 1px solid #f3f4f6;">
+      <tr style="border-bottom: 1px solid var(--divider);">
         <td style="padding: 12px"><strong>${data.name}</strong></td>
         <td style="padding: 12px">${data.count}</td>
         <td style="padding: 12px">${data.resolveTime}</td>
@@ -547,78 +561,4 @@ function renderFilteredTickets(filteredTickets) {
   }).join('');
 }
 
-// ===== Notifications =====
-async function toggleNotifications() {
-  const panel = document.getElementById('notif-panel');
-  if (panel.style.display === 'block') {
-    panel.style.display = 'none';
-  } else {
-    await renderNotifications();
-    panel.style.display = 'block';
-  }
-}
-
-async function renderNotifications() {
-  const notifList = document.getElementById('notif-list');
-  const currentUser = getCurrentUser();
-
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    let notifications = await response.json();
-
-    notifList.innerHTML = notifications.length
-      ? notifications.map(notification => `
-        <div class="notif-item">
-          <div>
-            <small>${notification.timestamp}</small>
-            <p>${notification.message}</p>
-          </div>
-          <button class="mark-read-btn" onclick="markAsRead('${notification.id}')" title="Mark as Read">&times;</button>
-        </div>`).join('')
-      : "<p style='text-align:center;'>No new notifications.</p>";
-
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-  }
-}
-
-async function markAsRead(notificationId) {
-  try {
-    await authFetch(`/api/notifications/${notificationId}/read`, { method: 'PUT' });
-    await renderNotifications();
-    await updateNotifCount();
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-  }
-}
-
-async function updateNotifCount() {
-  const currentUser = getCurrentUser();
-
-  try {
-    const response = await authFetch(`/api/notifications?email=${currentUser.email}&role=${currentUser.role}`);
-    const notifications = await response.json();
-    document.getElementById('notif-count').innerText = notifications.length;
-  } catch (error) {
-    console.error('Error updating notification count:', error);
-  }
-}
-
-document.getElementById('clear-all-notifs').onclick = async () => {
-  const currentUser = getCurrentUser();
-
-  try {
-    await authFetch('/api/notifications/read-all', {
-      method: 'PUT',
-      body: JSON.stringify({ email: currentUser.email, role: currentUser.role })
-    });
-
-    await renderNotifications();
-    await updateNotifCount();
-  } catch (error) {
-    console.error('Error clearing notifications:', error);
-  }
-};
-
-document.getElementById('notif-sort').addEventListener('change', renderNotifications);
+/// Notification panel removed - using email notifications only
