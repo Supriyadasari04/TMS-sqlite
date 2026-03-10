@@ -358,44 +358,83 @@ app.post('/api/user/sync', authenticateToken, async (req, res) => {
 app.post('/api/demo/seed', async (req, res) => {
   try {
     const demoPassword = await bcrypt.hash('Smartdesk@123', 10);
-    const now = new Date().toISOString();
+    const now = new Date();
 
-    // 1. Setup Professional Accounts
+    // ── 0. CLEAN SLATE: Delete all existing data ──
+    console.log('[SEED] Wiping old data...');
+    await supabase.from('ticket_comments').delete().neq('id', 0);
+    await supabase.from('feedback').delete().neq('id', 0);
+    await supabase.from('ticket_activity').delete().neq('id', 0);
+    await supabase.from('attachments').delete().neq('id', 0);
+    await supabase.from('tickets').delete().neq('id', '');
+    // Keep non-demo users, only upsert demo ones
+    console.log('[SEED] Old data cleared.');
+
+    // ── 1. Setup Professional Accounts (1 Admin + 4 Agents) ──
     const demoUsers = [
-      { id: 'admin_1', email: 'admin@smartdesk.com', username: 'HeadAdmin', password: demoPassword, role: 'admin', createdAt: now, needsPasswordReset: false },
-      { id: 'agent_1', email: 'agent1@smartdesk.com', username: 'AlexSupport', password: demoPassword, role: 'agent', createdAt: now, needsPasswordReset: false },
-      { id: 'agent_2', email: 'agent2@smartdesk.com', username: 'SarahHelp', password: demoPassword, role: 'agent', createdAt: now, needsPasswordReset: false },
-      { id: 'agent_3', email: 'agent3@smartdesk.com', username: 'MikeTech', password: demoPassword, role: 'agent', createdAt: now, needsPasswordReset: false }
+      { id: 'admin_1', email: 'admin@smartdesk.com', username: 'HeadAdmin', password: demoPassword, role: 'admin', createdAt: now.toISOString(), needsPasswordReset: false },
+      { id: 'agent_1', email: 'agent1@smartdesk.com', username: 'AlexSupport', password: demoPassword, role: 'agent', createdAt: now.toISOString(), needsPasswordReset: false },
+      { id: 'agent_2', email: 'agent2@smartdesk.com', username: 'SarahHelp', password: demoPassword, role: 'agent', createdAt: now.toISOString(), needsPasswordReset: false },
+      { id: 'agent_3', email: 'agent3@smartdesk.com', username: 'MikeTech', password: demoPassword, role: 'agent', createdAt: now.toISOString(), needsPasswordReset: false },
+      { id: 'agent_4', email: 'agent4@smartdesk.com', username: 'EmilyOps', password: demoPassword, role: 'agent', createdAt: now.toISOString(), needsPasswordReset: false }
     ];
 
     for (const u of demoUsers) {
-      // Upsert: Reset to correct password permanently
       await supabase.from('users').upsert(u, { onConflict: 'email' });
     }
+    console.log('[SEED] Users upserted.');
 
-    // 2. Setup Demo Tickets
+    // ── 2. Helper: Date offsets ──
+    const hoursAgo = (h) => new Date(now.getTime() - h * 3600000).toISOString();
+    const hoursFromNow = (h) => new Date(now.getTime() + h * 3600000).toISOString();
+
+    // ── 3. Create 15 Demo Tickets ──
+    // Mix: 3 Pending, 4 In Progress, 5 Resolved, 3 SLA Breached
+    const agents = ['AlexSupport', 'SarahHelp', 'MikeTech', 'EmilyOps'];
     const demoTickets = [
-      { id: 'TKT-101', title: 'Unauthorized Transaction', description: 'I see a charge of $450 that I did not authorize on my card ending in 4242.', accountHolder: 'John Doe', impact: 'High', status: 'Pending', createdBy: 'customer@test.com', assignedTo: 'agent1@smartdesk.com', createdAt: now },
-      { id: 'TKT-102', title: 'Login Issue', description: 'Cannot access my professional dashboard. Getting error 403.', accountHolder: 'Jane Smith', impact: 'Medium', status: 'In Progress', createdBy: 'jane@test.com', assignedTo: 'agent2@smartdesk.com', createdAt: now },
-      { id: 'TKT-103', title: 'Card Blocked', description: 'My professional card was blocked at an ATM today.', accountHolder: 'Robert Brown', impact: 'High', status: 'Resolved', createdBy: 'rob@test.com', assignedTo: 'agent1@smartdesk.com', createdAt: now }
+      // ─ PENDING (3) ─
+      { id: 'TKT-101', title: 'Unauthorized Transaction on Card', description: 'I see a charge of $450 that I did not authorize on my card ending in 4242.', accountHolder: 'John Doe', accountNumber: '4242', ifscCode: 'SBIN0001234', impact: 'High', status: 'Pending', createdBy: 'john@customer.com', assignedTo: 'AlexSupport', createdAt: hoursAgo(2) },
+      { id: 'TKT-105', title: 'Mobile App Crash on Login', description: 'The SmartDesk mobile app crashes immediately after entering credentials on Android 14.', accountHolder: 'David Wilson', accountNumber: '5566', ifscCode: 'ICIC0005678', impact: 'Medium', status: 'Pending', createdBy: 'david@customer.com', assignedTo: 'MikeTech', createdAt: hoursAgo(5) },
+      { id: 'TKT-109', title: 'Statement Download Not Working', description: 'PDF download for monthly statement gives a 500 error on the web portal.', accountHolder: 'Lisa Park', accountNumber: '9988', ifscCode: 'HDFC0009988', impact: 'Low', status: 'Pending', createdBy: 'lisa@customer.com', assignedTo: 'EmilyOps', createdAt: hoursAgo(1) },
+
+      // ─ IN PROGRESS (4) ─
+      { id: 'TKT-102', title: 'Account Lockout After Password Reset', description: 'Cannot access my account after resetting password. Getting error 403 on every login attempt.', accountHolder: 'Jane Smith', accountNumber: '1122', ifscCode: 'AXIS0001122', impact: 'High', status: 'In Progress', createdBy: 'jane@customer.com', assignedTo: 'SarahHelp', createdAt: hoursAgo(8), firstResponseAt: hoursAgo(7) },
+      { id: 'TKT-104', title: 'Wire Transfer Delayed 48 Hours', description: 'International wire transfer to UK account has been pending for 48 hours with no update.', accountHolder: 'Michael Chen', accountNumber: '3344', ifscCode: 'KKBK0003344', impact: 'High', status: 'In Progress', createdBy: 'michael@customer.com', assignedTo: 'AlexSupport', createdAt: hoursAgo(48), firstResponseAt: hoursAgo(47), slaBreached: true },
+      { id: 'TKT-107', title: 'Two-Factor Authentication Not Sending SMS', description: '2FA codes are not being delivered to my registered mobile number +1-555-0199.', accountHolder: 'Priya Sharma', accountNumber: '7788', ifscCode: 'PYTM0007788', impact: 'Medium', status: 'In Progress', createdBy: 'priya@customer.com', assignedTo: 'MikeTech', createdAt: hoursAgo(12), firstResponseAt: hoursAgo(10) },
+      { id: 'TKT-110', title: 'Direct Deposit Not Reflecting', description: 'My employer confirms salary was sent on Friday but it has not appeared in my account.', accountHolder: 'Kevin Brown', accountNumber: '0011', ifscCode: 'BARB0000011', impact: 'High', status: 'In Progress', createdBy: 'kevin@customer.com', assignedTo: 'EmilyOps', createdAt: hoursAgo(6), firstResponseAt: hoursAgo(5) },
+
+      // ─ RESOLVED (5) ─
+      { id: 'TKT-103', title: 'Debit Card Blocked at ATM', description: 'My debit card was blocked at an ATM today. I need it unblocked urgently.', accountHolder: 'Robert Brown', accountNumber: '2233', ifscCode: 'CNRB0002233', impact: 'High', status: 'Resolved', createdBy: 'robert@customer.com', assignedTo: 'AlexSupport', createdAt: hoursAgo(72), firstResponseAt: hoursAgo(71), resolvedAt: hoursAgo(68) },
+      { id: 'TKT-106', title: 'Incorrect Interest Rate Applied', description: 'My savings account shows 1.2% APY instead of the advertised 2.5% APY.', accountHolder: 'Emma Taylor', accountNumber: '4455', ifscCode: 'INDY0004455', impact: 'Medium', status: 'Resolved', createdBy: 'emma@customer.com', assignedTo: 'SarahHelp', createdAt: hoursAgo(96), firstResponseAt: hoursAgo(92), resolvedAt: hoursAgo(48) },
+      { id: 'TKT-108', title: 'Credit Card Annual Fee Dispute', description: 'I was charged a $95 annual fee but was told it would be waived for the first year.', accountHolder: 'Omar Hassan', accountNumber: '6677', ifscCode: 'YESB0006677', impact: 'Low', status: 'Resolved', createdBy: 'omar@customer.com', assignedTo: 'EmilyOps', createdAt: hoursAgo(120), firstResponseAt: hoursAgo(116), resolvedAt: hoursAgo(72) },
+      { id: 'TKT-111', title: 'Duplicate Charge on Restaurant Bill', description: 'I was charged twice ($85.50 each) at Olive Garden on March 5th.', accountHolder: 'Rachel Green', accountNumber: '8899', ifscCode: 'SBIN0008899', impact: 'Medium', status: 'Resolved', createdBy: 'rachel@customer.com', assignedTo: 'AlexSupport', createdAt: hoursAgo(48), firstResponseAt: hoursAgo(44), resolvedAt: hoursAgo(24) },
+      { id: 'TKT-113', title: 'Savings Account Opening Issue', description: 'Online application for a new savings account keeps failing at the verification step.', accountHolder: 'Tom Anderson', accountNumber: '1100', ifscCode: 'UNBI0001100', impact: 'Low', status: 'Resolved', createdBy: 'tom@customer.com', assignedTo: 'SarahHelp', createdAt: hoursAgo(168), firstResponseAt: hoursAgo(160), resolvedAt: hoursAgo(144) },
+
+      // ─ SLA BREACHED (3) ─
+      { id: 'TKT-112', title: 'Mortgage Payment Not Applied', description: 'My March mortgage payment of $2,450 was debited but not applied to my loan balance.', accountHolder: 'Sandra Lee', accountNumber: '2211', ifscCode: 'IDFB0002211', impact: 'High', status: 'In Progress', createdBy: 'sandra@customer.com', assignedTo: 'SarahHelp', createdAt: hoursAgo(24), firstResponseAt: hoursAgo(20), slaBreached: true },
+      { id: 'TKT-114', title: 'Fraud Alert Not Triggered', description: 'Multiple suspicious transactions from foreign IPs were made but no fraud alert was triggered.', accountHolder: 'James Kim', accountNumber: '3322', ifscCode: 'KVBL0003322', impact: 'High', status: 'Pending', createdBy: 'james@customer.com', assignedTo: 'MikeTech', createdAt: hoursAgo(10), slaBreached: true },
+      { id: 'TKT-115', title: 'Business Account Access Revoked', description: 'All 3 authorized users on our business account lost access simultaneously.', accountHolder: 'Apex Corp (Maria Garcia)', accountNumber: '5544', ifscCode: 'MAHB0005544', impact: 'High', status: 'In Progress', createdBy: 'maria@customer.com', assignedTo: 'AlexSupport', createdAt: hoursAgo(16), firstResponseAt: hoursAgo(14), slaBreached: true }
     ];
 
     for (const t of demoTickets) {
-      const { data: exists } = await supabase.from('tickets').select('id').eq('id', t.id).single();
-      if (!exists) {
-        // Add SLA dates
-        const slaTargets = { Low: 48, Medium: 24, High: 4 }; // hours
-        const target = slaTargets[t.impact] || 24;
-        t.slaResponseDeadline = new Date(Date.now() + target * 60 * 60 * 1000).toISOString();
-        t.slaResolveDeadline = new Date(Date.now() + target * 2 * 60 * 60 * 1000).toISOString();
-        await supabase.from('tickets').insert(t);
+      // Set defaults for fields not explicitly set
+      t.slaBreached = t.slaBreached || false;
+      t.firstResponseAt = t.firstResponseAt || null;
+      t.resolvedAt = t.resolvedAt || null;
+      t.sentiment = 'neutral';
+      
+      const { error: insertError } = await supabase.from('tickets').insert(t);
+      if (insertError) {
+        console.error(`[SEED ERROR] Failed to insert ticket ${t.id}:`, insertError);
+        // If we fail here, we don't throw, so we can see which ones worked.
       }
     }
+    console.log('[SEED] 15 demo tickets created.');
 
-    res.json({ message: 'Professional environment seeded successfully with demo data.' });
+    res.json({ message: 'Professional environment seeded successfully. 5 users + 15 tickets created.' });
   } catch (err) {
     console.error('Seeding error:', err);
-    res.status(500).json({ error: 'Failed to seed demo data' });
+    res.status(500).json({ error: 'Failed to seed demo data: ' + err.message });
   }
 });
 
