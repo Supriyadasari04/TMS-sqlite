@@ -62,8 +62,8 @@ SmartDesk utilizes a high-performance **Transformer-based Pipeline** to ensure n
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Supriyadasari04/Ticket-Management-System.git
-cd Ticket-Management-System/backend
+git clone https://github.com/Supriyadasari04/TMS-sqlite.git
+cd TMS-sqlite/backend
 ```
 
 ### 2. Install Dependencies
