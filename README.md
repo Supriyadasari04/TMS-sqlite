@@ -101,7 +101,7 @@ SmartDesk manages complex enterprise relationships with a streamlined PostgreSQL
 ---
 
 ## 🤝 Contributors & License
-*   **Lead Developer:** Aditya
+*   **Lead Developer:** Supriya Dasari
 *   **Design Philosophy:** Apple Human Interface Standard (Compact/Pastel)
 *   **License:** MIT License
 
